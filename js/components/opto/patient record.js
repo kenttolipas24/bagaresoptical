@@ -1,101 +1,87 @@
-// patient record.js - FINAL WORKING VERSION
-
+// ===============================
+// LOAD PATIENT RECORD HTML (ONCE)
+// ===============================
 fetch('../components/optometrists/patient record.html')
   .then(res => res.text())
-  .then(data => {
-    document.getElementById('patient-record-placeholder').innerHTML = data;
-
-    initializePatientRecords(); // Run everything after HTML is loaded
+  .then(html => {
+    document.getElementById('patient-record-placeholder').innerHTML = html;
+    initializePatientRecords();
   })
-  .catch(error => {
-    console.error('Error loading patient record component:', error);
-  });
+  .catch(err => console.error('Failed to load patient record HTML:', err));
 
+
+// ==================================
+// PATIENT RECORD LOGIC (DATA ONLY)
+// ==================================
 function initializePatientRecords() {
-  const patients = [
-    { name: 'Rechelle P. Aldea', date: '07-05-2024', od: '+2.25 / -0.50 / 90', os: '+2.25 / -0.50 / 90', add: '2.50', pd: '65' },
-    { name: 'Maria Santos', date: '2024-12-28', od: '+2.25 / -0.50 / 90', os: '+2.25 / -0.50 / 90', add: '2.50', pd: '65' },
-    { name: 'Juan Dela Cruz', date: '2024-12-27', od: '+1.50 / -0.75 / 85', os: '+1.75 / -0.75 / 95', add: '2.25', pd: '63' },
-    { name: 'Ana Reyes', date: '2024-12-26', od: '-1.25 / -0.50 / 180', os: '-1.00 / -0.50 / 175', add: '1.75', pd: '62' },
-    { name: 'Pedro Garcia', date: '2024-12-20', od: '+3.00 / -1.00 / 90', os: '+2.75 / -1.25 / 85', add: '2.75', pd: '64' },
-    { name: 'Lisa Gomez', date: '2024-12-15', od: '+2.50 / -0.75 / 90', os: '+2.25 / -0.50 / 95', add: '2.50', pd: '61' },
-    { name: 'Carlos Rivera', date: '2024-12-10', od: '+1.75 / -1.00 / 85', os: '+2.00 / -0.75 / 90', add: '2.25', pd: '66' }
-  ];
-
-  let currentPatientIndex = -1;
-
   const tbody = document.getElementById('patientTable');
-  const overlay = document.getElementById('overlay');
-  const modal = document.getElementById('modal');
-  const searchInput = document.getElementById('searchPatient'); // Now safe to get
+  const searchInput = document.getElementById('searchPatient');
 
-  // Build table
-  patients.forEach((p, i) => {
-    const row = tbody.insertRow();
-    row.insertCell(0).textContent = p.name;
-    row.insertCell(1).textContent = p.date;
-    row.insertCell(2).textContent = p.od;
-    row.insertCell(3).textContent = p.os;
-    row.insertCell(4).textContent = p.add;
-    row.insertCell(5).textContent = p.pd;
+  let patients = [];
 
-    const actionsCell = row.insertCell(6);
-    const btn = document.createElement('button');
-    btn.className = 'actions-btn';
-    btn.textContent = '⋯';
-    btn.setAttribute('data-index', i);
-    btn.onclick = (e) => {
-      const idx = parseInt(e.target.getAttribute('data-index'));
-      const rect = e.target.getBoundingClientRect();
-      showModal(rect.left - 120, rect.bottom + 5, idx);
-    };
-    actionsCell.appendChild(btn);
-  });
+  // 🔹 INITIAL LOAD
+  fetchPatientRecords();
 
-  // Live Search - Now works perfectly
-  if (searchInput) {
-    searchInput.addEventListener('input', function () {
-      const query = this.value.trim().toLowerCase();
-      const rows = tbody.querySelectorAll('tr');
+  // 🔹 AUTO REFRESH DATA EVERY 5 SECONDS
+  setInterval(fetchPatientRecords, 5000);
 
-      rows.forEach(row => {
-        const patientName = row.cells[0].textContent.toLowerCase();
-        row.style.display = patientName.includes(query) ? '' : 'none';
+  // =====================
+  // FETCH FROM DATABASE
+  // =====================
+  function fetchPatientRecords() {
+    fetch('../api/get_patient_records.php')
+      .then(res => res.json())
+      .then(data => {
+        patients = data;
+        renderTable();
+      })
+      .catch(err => {
+        console.error('Failed to fetch patient records:', err);
       });
+  }
+
+  // =====================
+  // RENDER TABLE
+  // =====================
+  function renderTable() {
+    tbody.innerHTML = '';
+
+    if (!patients || patients.length === 0) {
+      const row = tbody.insertRow();
+      const cell = row.insertCell(0);
+      cell.colSpan = 7;
+      cell.textContent = 'No patient records found.';
+      cell.style.textAlign = 'center';
+      return;
+    }
+
+    patients.forEach(p => {
+      const row = tbody.insertRow();
+
+      row.insertCell(0).textContent = p.patient_name;
+      row.insertCell(1).textContent = p.exam_date;
+      row.insertCell(2).textContent = `${p.od_sph} / ${p.od_cyl} / ${p.od_axis}`;
+      row.insertCell(3).textContent = `${p.os_sph} / ${p.os_cyl} / ${p.os_axis}`;
+      row.insertCell(4).textContent = p.od_add ?? '-';
+      row.insertCell(5).textContent = p.pd ?? '-';
+
+      const actionCell = row.insertCell(6);
+      actionCell.innerHTML = '<button class="actions-btn">⋯</button>';
     });
   }
 
-  // Modal functions
-  function showModal(x, y, idx) {
-    currentPatientIndex = idx;
-    modal.innerHTML = `
-      <button>View</button>
-      <button>Edit</button>
-      <button>Examine</button>
-      <div class="modal-divider"></div>
-      <button class="remove">Remove</button>
-    `;
-    modal.children[0].onclick = () => doAction('view');
-    modal.children[1].onclick = () => doAction('edit');
-    modal.children[2].onclick = () => doAction('examine');
-    modal.children[4].onclick = () => doAction('remove');
+  // =====================
+  // LIVE SEARCH (NO RELOAD)
+  // =====================
+  if (searchInput) {
+    searchInput.addEventListener('input', e => {
+      const query = e.target.value.toLowerCase();
+      const rows = tbody.querySelectorAll('tr');
 
-    modal.style.left = x + 'px';
-    modal.style.top = y + 'px';
-    modal.style.display = 'block';
-    overlay.style.display = 'block';
+      rows.forEach(row => {
+        const name = row.cells[0]?.textContent.toLowerCase() || '';
+        row.style.display = name.includes(query) ? '' : 'none';
+      });
+    });
   }
-
-  function doAction(action) {
-    const patient = patients[currentPatientIndex];
-    alert(`${action.toUpperCase()} Record\nPatient: ${patient.name}`);
-    hideModal();
-  }
-
-  function hideModal() {
-    modal.style.display = 'none';
-    overlay.style.display = 'none';
-  }
-
-  overlay.onclick = hideModal;
 }

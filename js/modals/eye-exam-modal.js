@@ -143,54 +143,39 @@ window.saveEyeExam = function() {
     return;
   }
 
-  // Collect all form data
   const examData = {
     appointment_id: currentExamAppointmentId,
-    patient_name: document.getElementById('patientName').value,
-    age: document.getElementById('patientAge').value,
-    email: document.getElementById('patientEmail').value,
     exam_date: document.getElementById('examDate').value,
-    
+
     // Refraction
     od_sph: document.getElementById('od_sph').value,
     od_cyl: document.getElementById('od_cyl').value,
     od_axis: document.getElementById('od_axis').value,
     od_add: document.getElementById('od_add').value,
+
     os_sph: document.getElementById('os_sph').value,
     os_cyl: document.getElementById('os_cyl').value,
     os_axis: document.getElementById('os_axis').value,
     os_add: document.getElementById('os_add').value,
+
     pd: document.getElementById('pd').value,
-    
-    // Visual Acuity
-    va_dist_od: document.getElementById('va_dist_od').value,
-    va_dist_os: document.getElementById('va_dist_os').value,
-    va_near_od: document.getElementById('va_near_od').value,
-    va_near_os: document.getElementById('va_near_os').value,
-    
+
     // Lens Recommendation
     lens_type: document.getElementById('lensType').value,
     lens_material: document.getElementById('lensMaterial').value,
-    
-    // Coatings
-    coatings: getSelectedCoatings(),
-    
+
     // Notes
     notes: document.getElementById('examNotes').value
   };
 
-  // Validate required fields
   if (!examData.exam_date) {
     alert('Please select exam date');
     return;
   }
 
-  // Send to server
   fetch('../api/save_eye_exam.php', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(examData)
   })
   .then(res => res.json())
@@ -198,11 +183,6 @@ window.saveEyeExam = function() {
     if (data.success) {
       alert('Eye examination saved successfully!');
       closeEyeExamModal();
-      
-      // Refresh appointment list if function exists
-      if (typeof refreshAppointments === 'function') {
-        refreshAppointments();
-      }
     } else {
       alert('Error saving examination: ' + (data.message || 'Unknown error'));
     }
@@ -211,7 +191,8 @@ window.saveEyeExam = function() {
     console.error('Error saving eye exam:', error);
     alert('Error saving examination. Please try again.');
   });
-}
+};
+
 
 // Helper function to get selected coatings
 function getSelectedCoatings() {
