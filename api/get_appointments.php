@@ -18,14 +18,14 @@ try {
     
     if ($dateFilter) {
         // Get appointments for specific date (only confirmed status)
-        $stmt = $conn->prepare("
+        $sql = "
             SELECT 
                 id,
                 CONCAT(
                     firstname, ' ', 
-                    COALESCE(middlename, ''), ' ', 
-                    lastname, ' ', 
-                    COALESCE(suffix, '')
+                    COALESCE(CONCAT(middlename, ' '), ''), 
+                    lastname,
+                    COALESCE(CONCAT(' ', suffix), '')
                 ) as patient_name,
                 appointment_date as date,
                 appointment_time as time,
@@ -35,18 +35,24 @@ try {
             WHERE appointment_date = ? 
             AND status = 'confirmed'
             ORDER BY appointment_time ASC
-        ");
+        ";
+        $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            throw new Exception("Prepare failed: " . $conn->error);
+        }
+        
         $stmt->bind_param("s", $dateFilter);
     } else {
         // Get all confirmed appointments
-        $stmt = $conn->prepare("
+        $sql = "
             SELECT 
                 id,
                 CONCAT(
                     firstname, ' ', 
-                    COALESCE(middlename, ''), ' ', 
-                    lastname, ' ', 
-                    COALESCE(suffix, '')
+                    COALESCE(CONCAT(middlename, ' '), ''), 
+                    lastname,
+                    COALESCE(CONCAT(' ', suffix), '')
                 ) as patient_name,
                 appointment_date as date,
                 appointment_time as time,
@@ -55,10 +61,18 @@ try {
             FROM patient_request
             WHERE status = 'confirmed'
             ORDER BY appointment_date DESC, appointment_time ASC
-        ");
+        ";
+        $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            throw new Exception("Prepare failed: " . $conn->error);
+        }
     }
     
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        throw new Exception("Execute failed: " . $stmt->error);
+    }
+    
     $result = $stmt->get_result();
     
     $appointments = [];
@@ -71,12 +85,16 @@ try {
     $stmt->close();
     $conn->close();
     
+    // Always return a valid JSON array
     echo json_encode($appointments);
     
 } catch (Exception $e) {
     http_response_code(500);
+    // Return valid JSON with error info
     echo json_encode([
-        'error' => $e->getMessage()
+        'error' => true,
+        'message' => $e->getMessage(),
+        'appointments' => []
     ]);
 }
 ?>

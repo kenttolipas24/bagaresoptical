@@ -30,9 +30,25 @@ function initializeAppointment() {
 
     // Fetch confirmed appointments from database
     fetch('../api/get_appointments.php')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Server returned ' + res.status);
+        }
+        return res.json();
+      })
       .then(data => {
-        if (!data || data.length === 0) {
+        // Handle error response
+        if (data.error) {
+          throw new Error(data.message || 'Unknown error');
+        }
+
+        // Ensure data is an array
+        if (!Array.isArray(data)) {
+          console.error('Expected array, got:', data);
+          throw new Error('Invalid response format');
+        }
+
+        if (data.length === 0) {
           tbody.innerHTML = `
             <tr>
               <td colspan="5" style="text-align:center;color:#999;padding:20px">
@@ -88,7 +104,7 @@ function initializeAppointment() {
         tbody.innerHTML = `
           <tr>
             <td colspan="5" style="text-align:center;color:#ef4444;padding:20px">
-              Error loading appointments. Please try again.
+              Error loading appointments: ${error.message}
             </td>
           </tr>`;
       });
