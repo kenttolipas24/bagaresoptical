@@ -1,5 +1,3 @@
-// request.js - Updated with DEBUG LOGGING
-
 let selectedRequestId = null;
 let allRequestsData = [];
 let requestsData = [];
@@ -105,8 +103,6 @@ function closeActionDropdown() {
   
   dropdown.classList.remove('show');
   overlay.classList.remove('show');
-  // DON'T reset selectedRequestId here - we still need it for the modal!
-  // selectedRequestId = null;
 }
 
 // Search functionality
@@ -158,8 +154,7 @@ function formatTime(timeStr) {
 
 // Confirm Modal
 function openConfirmModal() {
-  // DON'T call closeActionDropdown() - it resets selectedRequestId!
-  // Instead, just hide the dropdown directly
+  // Hide dropdown without resetting selectedRequestId
   const dropdown = document.getElementById('requestActionDropdown');
   const overlay = document.getElementById('dropdownOverlay');
   dropdown.classList.remove('show');
@@ -168,7 +163,7 @@ function openConfirmModal() {
   console.log('🔍 Looking for request with ID:', selectedRequestId);
   console.log('📋 All requests:', allRequestsData);
   
-  const request = allRequestsData.find(r => r.id == selectedRequestId); // Changed === to ==
+  const request = allRequestsData.find(r => r.id == selectedRequestId);
   console.log('✅ Found request:', request);
   
   if (!request) {
@@ -246,7 +241,6 @@ function confirmAppointment() {
       // Refresh appointments in the Appointment section
       console.log('🔄 Refreshing appointments...');
       if (typeof window.refreshAppointments === 'function') {
-        // Small delay to ensure database has been updated
         setTimeout(() => {
           window.refreshAppointments();
         }, 300);
@@ -268,7 +262,6 @@ function confirmAppointment() {
 
 // Reschedule Modal
 function openRescheduleModal() {
-  // Hide dropdown without resetting selectedRequestId
   const dropdown = document.getElementById('requestActionDropdown');
   const overlay = document.getElementById('dropdownOverlay');
   dropdown.classList.remove('show');
@@ -325,7 +318,6 @@ function rescheduleAppointment() {
 
 // Cancel Modal
 function openCancelModal() {
-  // Hide dropdown without resetting selectedRequestId
   const dropdown = document.getElementById('requestActionDropdown');
   const overlay = document.getElementById('dropdownOverlay');
   dropdown.classList.remove('show');
@@ -379,11 +371,11 @@ window.openCancelModal = openCancelModal;
 window.closeCancelModal = closeCancelModal;
 window.cancelAppointment = cancelAppointment;
 
-// Auto-refresh requests
+// Auto-refresh requests every 30 seconds
 let requestAutoRefresh = setInterval(() => {
-  console.log('Auto-refreshing booking requests...');
+  console.log('🔄 Auto-refreshing booking requests...');
   loadRequests();
-}, 5000); // 5 seconds
+}, 30000);
 
 // Stop auto-refresh when leaving the page
 window.addEventListener('beforeunload', () => {

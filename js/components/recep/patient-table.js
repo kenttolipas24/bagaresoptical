@@ -32,7 +32,9 @@ function initializePatientTable() {
     }
 
     // Add event listeners for closing dropdown
-    setupDropdownListeners();
+    if (typeof setupDropdownListeners === 'function') {
+      setupDropdownListeners();
+    }
   }, 100);
 }
 
@@ -44,59 +46,35 @@ window.updatePatientTable = function() {
     return;
   }
   
-  // Load patients from localStorage
-  let patients = JSON.parse(localStorage.getItem('patients')) || [
-    {
-      id: 1,
-      firstName: 'Kent Dave',
-      middleInitial: 'E',
-      lastName: 'Tolipas',
-      email: 'kent@example.com',
-      age: 28,
-      dateOfBirth: '1997-03-15',
-      address: 'balite',
-      sex: 'Male',
-      contactNumber: '09123456789',
-      lastVisit: '11-24-2025',
-      prescription: 'No prescription yet',
-      status: 'Active'
-    },
-    {
-      id: 2,
-      firstName: 'Rechelle',
-      middleInitial: 'P.',
-      lastName: 'Aldea',
-      email: 'rechelle@example.com',
-      age: 25,
-      dateOfBirth: '1999-05-07',
-      address: 'Catubig',
-      sex: 'Female',
-      contactNumber: '09198765432',
-      lastVisit: '07-05-2024',
-      prescription: '+2.25 | -0.50 | 90\n+2.25 | -0.50 | 90',
-      status: 'Active'
-    }
-  ];
-  
-  // Save to localStorage if it's the first time
-  if (!localStorage.getItem('patients')) {
-    localStorage.setItem('patients', JSON.stringify(patients));
-  }
+  // Load patients from localStorage (empty by default)
+  let patients = JSON.parse(localStorage.getItem('patients')) || [];
   
   // Clear existing rows
   tbody.innerHTML = '';
   
+  // Show message if no patients exist
+  if (patients.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 2rem; color: #6b7280;">
+          No patients found. Click "Add Patient" to add your first patient.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
   // Add all patients to table
   patients.forEach((patient) => {
-    const fullName = `${patient.firstName} ${patient.middleInitial} ${patient.lastName}`;
+    const fullName = `${patient.firstName} ${patient.middleInitial || ''} ${patient.lastName}`.trim();
     
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${fullName}</td>
-      <td>${patient.address}</td>
-      <td>${patient.lastVisit}</td>
-      <td>${patient.prescription.replace(/\n/g, '<br>')}</td>
-      <td><span class="status ${patient.status.toLowerCase()}">${patient.status}</span></td>
+      <td>${patient.address || 'N/A'}</td>
+      <td>${patient.lastVisit || 'N/A'}</td>
+      <td>${(patient.prescription || 'No prescription yet').replace(/\n/g, '<br>')}</td>
+      <td><span class="status ${(patient.status || 'active').toLowerCase()}">${patient.status || 'Active'}</span></td>
       <td>
         <div class="action-btn-container">
           <button class="action-btn" onclick="toggleActionDropdown(event, ${patient.id})">⋮</button>
