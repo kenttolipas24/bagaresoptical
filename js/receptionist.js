@@ -1,26 +1,36 @@
 // role protection
-requireRole("repceptionist");
+requireRole("receptionist");
+
+console.log("=== RECEPTIONIST PAGE LOADED ===");
 
 // ===============================
-// RECEPTIONIST PAGE LOGIC BELOW
+// SECRETARY/CASHIER PAGE LOGIC BELOW
 // ===============================
-console.log("Receptionist panel loaded");
 
-// load navbar
+// load navbar first
 fetch("../components/receptionist/navbar.html")
     .then(res => res.text())
     .then(html => {
         document.getElementById("navbar-placeholder").innerHTML = html;
-    });
-
-// load profile dropdown
-fetch("../api/auth_check.php")
+        
+        // THEN load profile dropdown data after navbar is loaded
+        return fetch("../api/auth_check.php", {
+            credentials: "same-origin"
+        });
+    })
     .then(res => res.json())
     .then(user => {
-        document.querySelector(".profile-name").textContent =
-            user.firstname + " " + user.lastname;
-        document.querySelector(".profile-role").textContent =
-            user.role;
+        console.log("Profile loaded:", user);
+        
+        const profileName = document.querySelector(".profile-name");
+        const profileRole = document.querySelector(".profile-role");
+        
+        if (profileName && profileRole) {
+            profileName.textContent = user.firstname + " " + user.lastname;
+            // ✅ Show original role with proper capitalization
+            profileRole.textContent = user.original_role || user.role;
+        }
+    })
+    .catch(error => {
+        console.error("Error loading profile:", error);
     });
-
-// add your existing optometrist JS here

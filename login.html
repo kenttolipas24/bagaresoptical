@@ -129,69 +129,93 @@
     </div>
 
     <script>
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
+function showError(message) {
+    const errorDiv = document.getElementById('errorMessage');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
+}
 
-        async function login() {
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
+async function login() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
 
-            if (!username || !password) {
-                showError('Please enter both username and password.');
-                return;
-            }
+    if (!username || !password) {
+        showError('Please enter both username and password.');
+        return;
+    }
 
-            try {
-                const response = await fetch('api/login.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Redirect based on role
-                    switch(data.user.role.toLowerCase()) {
-                        case 'admin':
-                            window.location.href = 'pages/admin.html';
-                            break;
-                        case 'manager':
-                            window.location.href = 'manager.html';
-                            break;
-                        case 'secretary/cashier':
-                            window.location.href = 'receptionist.html';
-                            break;
-                        case 'optometrist':
-                            window.location.href = 'pages/optometrist.html';
-                            break;
-                        default:
-                            showError('Invalid role assigned to user');
-                    }
-                } else {
-                    showError(data.error || 'Login failed. Please try again.');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                showError('Connection error. Please try again.');
-            }
-        }
-
-        // Allow Enter key to submit
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                login();
-            }
+    try {
+        const response = await fetch('api/login.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin', // CRITICAL: Ensures session cookie is sent
+            body: JSON.stringify({ username, password })
         });
-    </script>
+
+        const data = await response.json();
+        
+        // DEBUG: Log the response
+        console.log('Login response:', data);
+
+        if (data.success) {
+            // Get normalized role from backend
+            const role = data.user.role.toLowerCase().trim();
+            
+            // DEBUG: Log the role
+            console.log('User role (normalized):', role);
+
+            // Route based on normalized role
+            switch (role) {
+                case 'admin':
+                    console.log('Redirecting to admin page...');
+                    window.location.href = 'pages/admin.html';
+                    break;
+
+                case 'manager':
+                    console.log('Redirecting to manager page...');
+                    window.location.href = 'pages/manager.html';
+                    break;
+
+                case 'secretary/cashier':
+                case 'receptionist':
+                case 'secretary':
+                case 'cashier':
+                    console.log('Redirecting to receptionist page...');
+                    window.location.href = 'pages/receptionist.html';
+                    break;
+
+                case 'optometrist':
+                    console.log('Redirecting to optometrist page...');
+                    window.location.href = 'pages/optometrist.html';
+                    break;
+
+                default:
+                    console.error('Unknown role:', role);
+                    showError('Invalid role assigned to user: ' + role);
+            }
+        } else {
+            showError(data.message || 'Login failed. Please check your credentials.');
+        }
+
+    } catch (error) {
+        console.error('Login error:', error);
+        showError('Connection error. Please try again.');
+    }
+}
+
+// Allow Enter key
+document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        login();
+    }
+});
+</script>
+
 </body>
 </html>
 

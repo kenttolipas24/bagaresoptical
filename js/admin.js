@@ -1,11 +1,29 @@
-// MUST RUN FIRST
+// role protection
 requireRole("admin");
 
-console.log("Admin dashboard loaded");
+console.log("=== ADMIN PAGE LOADED ===");
 
-// Example: navbar loader
+// load navbar first
 fetch("../components/admin/navbar.html")
     .then(res => res.text())
     .then(html => {
         document.getElementById("navbar-placeholder").innerHTML = html;
+        
+        return fetch("../api/auth_check.php", {
+            credentials: "same-origin"
+        });
+    })
+    .then(res => res.json())
+    .then(user => {
+        const profileName = document.querySelector(".profile-name");
+        const profileRole = document.querySelector(".profile-role");
+        
+        if (profileName && profileRole) {
+            profileName.textContent = user.firstname + " " + user.lastname;
+            // ✅ Show original role with proper capitalization
+            profileRole.textContent = user.original_role || user.role;
+        }
+    })
+    .catch(error => {
+        console.error("Error loading profile:", error);
     });
