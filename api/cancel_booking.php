@@ -10,14 +10,14 @@ try {
     if ($conn->connect_error) {
         throw new Exception("Database connection failed");
     }
-
+    
     $input = file_get_contents("php://input");
     $data = json_decode($input, true);
-
+    
     if (!isset($data['request_id'])) {
         throw new Exception("Request ID is required");
     }
-
+    
     // Extract numeric ID from "REQ-0001" format
     $requestId = intval(str_replace('REQ-', '', $data['request_id']));
 
@@ -31,12 +31,12 @@ try {
 
     $stmt->close();
     $conn->close();
-
+    
     echo json_encode([
         "success" => true,
         "message" => "Booking cancelled successfully"
     ]);
-
+    
 } catch (Exception $e) {
     http_response_code(400);
     echo json_encode([

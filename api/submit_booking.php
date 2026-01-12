@@ -6,10 +6,10 @@ header("Content-Type: application/json");
 
 try {
     $conn = new mysqli("localhost", "root", "", "bagares_system");
-    
+
     if ($conn->connect_error) {
         throw new Exception("Database connection failed");
-    }
+}
 
     // Get and validate input
     $input = file_get_contents("php://input");

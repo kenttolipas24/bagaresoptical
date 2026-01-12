@@ -46,8 +46,8 @@ function attachFormHandler() {
                     }
                 })
                 .catch(error => {
-    console.error('Fetch error:', error);
-    alert('Failed to connect to server. Please check your connection.');
+                    console.error('Fetch error:', error);
+                    alert('Failed to connect to server. Please check your connection.');
                 });
             }
         });
