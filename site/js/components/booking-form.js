@@ -46,8 +46,8 @@ function attachFormHandler() {
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to submit booking. Please try again.');
+    console.error('Fetch error:', error);
+    alert('Failed to connect to server. Please check your connection.');
                 });
             }
         });
