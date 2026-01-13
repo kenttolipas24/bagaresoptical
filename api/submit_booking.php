@@ -1,7 +1,7 @@
 <?php
-// ================================
+// ===================================
 // submit_booking.php (Render-ready)
-// ================================
+// ===================================
 
 // CORS
 header("Access-Control-Allow-Origin: *");
@@ -9,13 +9,13 @@ header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Content-Type: application/json");
 
-// Handle preflight
+// Preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// Hide PHP errors from JSON output
+// Hide PHP warnings from breaking JSON
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -24,10 +24,10 @@ try {
     // DATABASE CONNECTION
     // =========================
     $conn = new mysqli(
-        $_ENV['DB_HOST'],
-        $_ENV['DB_USER'],
-        $_ENV['DB_PASS'],
-        $_ENV['DB_NAME'],
+        $_ENV['DB_HOST'] ?? '',
+        $_ENV['DB_USER'] ?? '',
+        $_ENV['DB_PASS'] ?? '',
+        $_ENV['DB_NAME'] ?? '',
         $_ENV['DB_PORT'] ?? 3306
     );
 
@@ -38,12 +38,12 @@ try {
     // =========================
     // READ JSON INPUT
     // =========================
-    $rawInput = file_get_contents("php://input");
-    if (!$rawInput) {
+    $raw = file_get_contents("php://input");
+    if (!$raw) {
         throw new Exception("Empty request body");
     }
 
-    $data = json_decode($rawInput, true);
+    $data = json_decode($raw, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
         throw new Exception("Invalid JSON input");
     }
@@ -65,7 +65,7 @@ try {
 
     foreach ($required as $field) {
         if (!isset($data[$field]) || trim($data[$field]) === '') {
-            throw new Exception("Missing required field: {$field}");
+            throw new Exception("Missing field: {$field}");
         }
     }
 
@@ -74,7 +74,7 @@ try {
     }
 
     // =========================
-    // INSERT DATA
+    // INSERT
     // =========================
     $stmt = $conn->prepare("
         INSERT INTO patient_request
@@ -119,18 +119,14 @@ try {
         throw new Exception("Insert failed");
     }
 
-    $insertId = $stmt->insert_id;
-    $stmt->close();
-    $conn->close();
-
-    // =========================
-    // SUCCESS RESPONSE
-    // =========================
     echo json_encode([
         "success" => true,
-        "message" => "Booking request submitted successfully",
-        "request_id" => $insertId
+        "message" => "Booking submitted successfully",
+        "request_id" => $stmt->insert_id
     ]);
+
+    $stmt->close();
+    $conn->close();
 
 } catch (Exception $e) {
     http_response_code(400);

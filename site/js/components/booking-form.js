@@ -1,65 +1,74 @@
-// ================================
-// Load Booking Form Component
-// ================================
+// ===============================
+// Load Booking Form HTML
+// ===============================
 fetch('components/booking-form.html')
-    .then(res => res.text())
-    .then(html => {
-        document.getElementById('booking-form-placeholder').innerHTML = html;
+  .then(res => {
+    if (!res.ok) throw new Error('Failed to load booking form');
+    return res.text();
+  })
+  .then(html => {
+    document.getElementById('booking-form-placeholder').innerHTML = html;
 
-        if (typeof initializeBooking === 'function') {
-            initializeBooking();
-        }
+    if (typeof initializeBooking === 'function') {
+      initializeBooking();
+    }
 
-        attachFormHandler();
-        console.log('Booking form loaded');
-    })
-    .catch(err => console.error('Error loading booking form:', err));
+    attachFormHandler();
+  })
+  .catch(err => {
+    console.error('Booking form load error:', err);
+  });
 
 
-// ================================
-// Form Submit Handler
-// ================================
+// ===============================
+// Submit Booking
+// ===============================
 function attachFormHandler() {
-    const form = document.getElementById('booking-form');
+  const form = document.getElementById('booking-form');
+  if (!form) return;
 
-    if (!form) return;
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
 
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
+    if (typeof bookingData === 'undefined') {
+      alert('Booking data missing');
+      return;
+    }
 
-        if (typeof bookingData === 'undefined') {
-            alert('Booking data is missing');
-            return;
+    try {
+      const response = await fetch(
+        'https://bagares-api.onrender.com/api/submit_booking.php',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bookingData)
         }
+      );
 
-        console.log('Booking Data:', bookingData);
+      const text = await response.text();
 
-        fetch('https://bagares-api.onrender.com/api/submit_booking.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(bookingData)
-        })
-        .then(res => {
-            if (!res.ok) {
-                throw new Error('Server error');
-            }
-            return res.json();
-        })
-        .then(data => {
-            if (data.success) {
-                alert('Booking request submitted successfully!');
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error('Non-JSON response:', text);
+        throw new Error('Server returned invalid JSON');
+      }
 
-                form.reset();
-                if (typeof resetBooking === 'function') {
-                    resetBooking();
-                }
-            } else {
-                alert('Error: ' + data.error);
-            }
-        })
-        .catch(err => {
-            console.error('Fetch error:', err);
-            alert('Failed to connect to server.');
-        });
-    });
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Booking failed');
+      }
+
+      alert('Booking request submitted successfully!');
+      form.reset();
+
+      if (typeof resetBooking === 'function') {
+        resetBooking();
+      }
+
+    } catch (err) {
+      console.error('Booking submit error:', err);
+      alert(err.message);
+    }
+  });
 }
