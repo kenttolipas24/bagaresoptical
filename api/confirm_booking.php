@@ -1,16 +1,43 @@
 <?php
-// api/confirm_booking.php
+// ==============================================
+// confirm_booking.php - PRODUCTION READY (Render)
+// ==============================================
+
+// CORS Headers
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowed_origins = [
+    'https://bagaresoptical-com.onrender.com',
+    'http://localhost'
+];
+
+if (in_array($origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: $origin");
+} else {
+    header("Access-Control-Allow-Origin: *"); // Temporary for debugging
+}
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json");
+
+// Preflight OPTIONS
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 error_reporting(0);
 ini_set('display_errors', 0);
 
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Headers: Content-Type");
-
 try {
-    $conn = new mysqli("localhost", "root", "", "bagares_system");
-    
+    // Render Database Connection (REPLACE WITH YOUR RENDER DB CREDENTIALS)
+    $conn = new mysqli(
+        "mysql-xxxx.provider.com",      // ← your DB_HOST (copy exactly from dashboard)
+        "admin",                        // ← your DB_USER
+        "12345678",                     // ← your DB_PASS (keep secure!)
+        "bagares_system",               // ← your DB_NAME
+        3306                            // ← your DB_PORT
+    );
+
     if ($conn->connect_error) {
         throw new Exception("Database connection failed");
     }
@@ -28,49 +55,41 @@ try {
         throw new Exception('Request ID is required');
     }
 
-    // Start transaction for safety
     $conn->begin_transaction();
-    
-    // 1. Get booking request details from patient_request table
+
     $stmt = $conn->prepare("
-        SELECT 
-            firstname, middlename, lastname, suffix,
-            email, birthdate, address,
-            appointment_date, appointment_time, service,
-            status
+        SELECT firstname, middlename, lastname, suffix, email, birthdate, address,
+               appointment_date, appointment_time, service, status
         FROM patient_request 
         WHERE id = ? AND status = 'pending'
     ");
     $stmt->bind_param("i", $requestId);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     if ($result->num_rows === 0) {
         throw new Exception('Booking request not found or already processed');
     }
-    
-    $booking = $result->fetch_assoc();
+
     $stmt->close();
 
-    // 2. Update the status to 'confirmed'
     $stmt = $conn->prepare("
         UPDATE patient_request 
         SET status = 'confirmed', updated_at = NOW()
         WHERE id = ?
     ");
     $stmt->bind_param("i", $requestId);
-    
+
     if (!$stmt->execute()) {
-        throw new Exception("Failed to update booking status: " . $stmt->error);
+        throw new Exception("Failed to update status: " . $stmt->error);
     }
-    
+
     if ($stmt->affected_rows === 0) {
-        throw new Exception("No rows updated - booking may have already been confirmed");
+        throw new Exception("No rows updated");
     }
-    
+
     $stmt->close();
-    
-    // Commit transaction
+
     $conn->commit();
     $conn->close();
 
@@ -78,7 +97,7 @@ try {
         'success' => true,
         'message' => 'Booking confirmed successfully'
     ]);
-    
+
 } catch (Exception $e) {
     if (isset($conn)) {
         $conn->rollback();

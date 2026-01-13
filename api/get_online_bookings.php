@@ -1,72 +1,76 @@
 <?php
-// Upload this to: InfinityFree /site/api/get_online_bookings.php
+// ==============================================
+// get_online_bookings.php - PRODUCTION READY (Render)
+// ==============================================
 
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *"); // Allow localhost to access
-header("Access-Control-Allow-Methods: GET");
+// CORS Headers
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowed_origins = [
+    'https://bagaresoptical-com.onrender.com',
+    'http://localhost'
+];
+
+if (in_array($origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: $origin");
+} else {
+    header("Access-Control-Allow-Origin: *"); // Temporary for debugging
+}
+header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json");
+
+// Preflight OPTIONS
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 error_reporting(0);
 ini_set('display_errors', 0);
 
 try {
-    // InfinityFree database connection
-    $DB_HOST = "sql210.infinityfree.com";
-    $DB_USER = "if0_40876922";
-    $DB_PASS = "wwPkdzJx2o";
-    $DB_NAME = "if0_40876922_bagares";
-    
-    $conn = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
-    
+    // Render Database Connection (REPLACE THESE WITH YOUR ACTUAL RENDER DB CREDENTIALS)
+    $conn = new mysqli(
+        "mysql-xxxx.provider.com",      // ← your DB_HOST (copy exactly from dashboard)
+        "admin",                        // ← your DB_USER
+        "12345678",                     // ← your DB_PASS (keep secure!)
+        "bagares_system",               // ← your DB_NAME
+        3306                            // ← your DB_PORT
+    );
+
     if ($conn->connect_error) {
         throw new Exception("Database connection failed");
     }
-    
+
     // Get status filter (default: pending)
     $status = isset($_GET['status']) ? trim($_GET['status']) : 'pending';
-    
-    // Query to get booking requests
+
+    // Query
     $sql = "SELECT 
-                id,
-                service,
-                appointment_date,
-                appointment_time,
-                firstname,
-                middlename,
-                lastname,
-                suffix,
-                address,
-                birthdate,
-                email,
-                status,
-                created_at
+                id, service, appointment_date, appointment_time, firstname, middlename, 
+                lastname, suffix, address, birthdate, email, status, created_at
             FROM patient_request";
-    
-    // Filter by status
+
     if ($status !== 'all') {
         $sql .= " WHERE status = ?";
     }
-    
+
     $sql .= " ORDER BY created_at DESC";
-    
-    // Execute query
+
+    // Execute
     if ($status !== 'all') {
         $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            throw new Exception("Prepare failed");
-        }
         $stmt->bind_param("s", $status);
         $stmt->execute();
         $result = $stmt->get_result();
     } else {
         $result = $conn->query($sql);
     }
-    
+
     if (!$result) {
         throw new Exception("Query failed");
     }
-    
-    // Fetch all requests
+
     $requests = [];
     while ($row = $result->fetch_assoc()) {
         $requests[] = [
@@ -83,25 +87,24 @@ try {
             'time'         => $row['appointment_time'],
             'status'       => $row['status'] ?? 'pending',
             'created_at'   => $row['created_at'],
-            'source'       => 'online' // Tag to identify it's from online
+            'source'       => 'online'
         ];
     }
-    
-    // Return JSON response
+
     echo json_encode([
         'success' => true,
-        'data' => $requests,
-        'count' => count($requests)
+        'data'    => $requests,
+        'count'   => count($requests)
     ]);
-    
+
     if (isset($stmt)) $stmt->close();
     $conn->close();
-    
+
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => $e->getMessage()
+        'error'   => $e->getMessage()
     ]);
 }
 ?>
