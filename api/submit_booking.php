@@ -3,7 +3,7 @@
 // submit_booking.php (Render-ready)
 // ================================
 
-// CORS (important for frontend fetch)
+// CORS
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Show errors ONLY in logs (not JSON output)
+// Hide PHP errors from JSON output
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -120,7 +120,6 @@ try {
     }
 
     $insertId = $stmt->insert_id;
-
     $stmt->close();
     $conn->close();
 
