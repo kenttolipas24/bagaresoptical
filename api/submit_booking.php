@@ -1,48 +1,102 @@
 <?php
-error_reporting(0);
-ini_set('display_errors', 0);
+// ================================
+// submit_booking.php (Render-ready)
+// ================================
 
+// CORS (important for frontend fetch)
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Content-Type: application/json");
 
+// Handle preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// Show errors ONLY in logs (not JSON output)
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
 try {
-    $conn = new mysqli("localhost", "root", "", "bagares_system");
+    // =========================
+    // DATABASE CONNECTION
+    // =========================
+    $conn = new mysqli(
+        $_ENV['DB_HOST'],
+        $_ENV['DB_USER'],
+        $_ENV['DB_PASS'],
+        $_ENV['DB_NAME'],
+        $_ENV['DB_PORT'] ?? 3306
+    );
 
     if ($conn->connect_error) {
         throw new Exception("Database connection failed");
-}
+    }
 
-    // Get and validate input
-    $input = file_get_contents("php://input");
-    $data = json_decode($input, true);
+    // =========================
+    // READ JSON INPUT
+    // =========================
+    $rawInput = file_get_contents("php://input");
+    if (!$rawInput) {
+        throw new Exception("Empty request body");
+    }
 
+    $data = json_decode($rawInput, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
         throw new Exception("Invalid JSON input");
     }
 
-    // Validate required fields (NO PHONE)
-    $required = ['service', 'date', 'time', 'firstname', 'middlename', 'lastname', 
-                 'address', 'birthdate', 'email'];
+    // =========================
+    // VALIDATION
+    // =========================
+    $required = [
+        'service',
+        'date',
+        'time',
+        'firstname',
+        'middlename',
+        'lastname',
+        'address',
+        'birthdate',
+        'email'
+    ];
+
     foreach ($required as $field) {
-        if (empty($data[$field])) {
-            throw new Exception("Missing required field: " . $field);
+        if (!isset($data[$field]) || trim($data[$field]) === '') {
+            throw new Exception("Missing required field: {$field}");
         }
     }
 
-    // Validate email format
     if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
         throw new Exception("Invalid email format");
     }
 
-    // Prepare and execute insert (NO PHONE)
+    // =========================
+    // INSERT DATA
+    // =========================
     $stmt = $conn->prepare("
         INSERT INTO patient_request
-        (service, appointment_date, appointment_time, firstname, middlename, lastname, 
-         suffix, address, birthdate, email, status, created_at)
+        (
+            service,
+            appointment_date,
+            appointment_time,
+            firstname,
+            middlename,
+            lastname,
+            suffix,
+            address,
+            birthdate,
+            email,
+            status,
+            created_at
+        )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
     ");
 
     if (!$stmt) {
-        throw new Exception("Failed to prepare statement: " . $conn->error);
+        throw new Exception("Prepare failed");
     }
 
     $suffix = $data['suffix'] ?? '';
@@ -62,23 +116,27 @@ try {
     );
 
     if (!$stmt->execute()) {
-        throw new Exception("Failed to submit booking: " . $stmt->error);
+        throw new Exception("Insert failed");
     }
 
-    $requestId = $conn->insert_id;
+    $insertId = $stmt->insert_id;
+
     $stmt->close();
     $conn->close();
 
+    // =========================
+    // SUCCESS RESPONSE
+    // =========================
     echo json_encode([
         "success" => true,
         "message" => "Booking request submitted successfully",
-        "request_id" => $requestId
+        "request_id" => $insertId
     ]);
 
 } catch (Exception $e) {
     http_response_code(400);
     echo json_encode([
+        "success" => false,
         "error" => $e->getMessage()
     ]);
 }
-?>
