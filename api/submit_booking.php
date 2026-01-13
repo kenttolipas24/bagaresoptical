@@ -1,10 +1,10 @@
 <?php
-// ===================================
-// submit_booking.php (Render-ready)
-// ===================================
+// ===============================
+// submit_booking.php (FINAL FIX)
+// ===============================
 
 // CORS
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: https://bagaresoptical-com.onrender.com");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Content-Type: application/json");
@@ -15,19 +15,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Hide PHP warnings from breaking JSON
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 try {
-    // =========================
-    // DATABASE CONNECTION
-    // =========================
     $conn = new mysqli(
-        $_ENV['DB_HOST'] ?? '',
-        $_ENV['DB_USER'] ?? '',
-        $_ENV['DB_PASS'] ?? '',
-        $_ENV['DB_NAME'] ?? '',
+        $_ENV['DB_HOST'],
+        $_ENV['DB_USER'],
+        $_ENV['DB_PASS'],
+        $_ENV['DB_NAME'],
         $_ENV['DB_PORT'] ?? 3306
     );
 
@@ -35,9 +31,6 @@ try {
         throw new Exception("Database connection failed");
     }
 
-    // =========================
-    // READ JSON INPUT
-    // =========================
     $raw = file_get_contents("php://input");
     if (!$raw) {
         throw new Exception("Empty request body");
@@ -48,49 +41,29 @@ try {
         throw new Exception("Invalid JSON input");
     }
 
-    // =========================
-    // VALIDATION
-    // =========================
     $required = [
-        'service',
-        'date',
-        'time',
-        'firstname',
-        'middlename',
-        'lastname',
-        'address',
-        'birthdate',
-        'email'
+        'service','date','time',
+        'firstname','middlename','lastname',
+        'address','birthdate','email'
     ];
 
     foreach ($required as $field) {
-        if (!isset($data[$field]) || trim($data[$field]) === '') {
+        if (empty($data[$field])) {
             throw new Exception("Missing field: {$field}");
         }
     }
 
     if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-        throw new Exception("Invalid email format");
+        throw new Exception("Invalid email");
     }
 
-    // =========================
-    // INSERT
-    // =========================
     $stmt = $conn->prepare("
         INSERT INTO patient_request
         (
-            service,
-            appointment_date,
-            appointment_time,
-            firstname,
-            middlename,
-            lastname,
-            suffix,
-            address,
-            birthdate,
-            email,
-            status,
-            created_at
+            service, appointment_date, appointment_time,
+            firstname, middlename, lastname,
+            suffix, address, birthdate, email,
+            status, created_at
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
     ");
@@ -115,13 +88,10 @@ try {
         $data['email']
     );
 
-    if (!$stmt->execute()) {
-        throw new Exception("Insert failed");
-    }
+    $stmt->execute();
 
     echo json_encode([
         "success" => true,
-        "message" => "Booking submitted successfully",
         "request_id" => $stmt->insert_id
     ]);
 

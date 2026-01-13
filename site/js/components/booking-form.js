@@ -1,42 +1,19 @@
-// ===============================
-// Load Booking Form HTML
-// ===============================
 fetch('components/booking-form.html')
-  .then(res => {
-    if (!res.ok) throw new Error('Failed to load booking form');
-    return res.text();
-  })
+  .then(res => res.text())
   .then(html => {
     document.getElementById('booking-form-placeholder').innerHTML = html;
-
-    if (typeof initializeBooking === 'function') {
-      initializeBooking();
-    }
-
     attachFormHandler();
-  })
-  .catch(err => {
-    console.error('Booking form load error:', err);
   });
 
-
-// ===============================
-// Submit Booking
-// ===============================
 function attachFormHandler() {
   const form = document.getElementById('booking-form');
   if (!form) return;
 
-  form.addEventListener('submit', async function (e) {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    if (typeof bookingData === 'undefined') {
-      alert('Booking data missing');
-      return;
-    }
-
     try {
-      const response = await fetch(
+      const res = await fetch(
         'https://bagares-api.onrender.com/api/submit_booking.php',
         {
           method: 'POST',
@@ -45,29 +22,17 @@ function attachFormHandler() {
         }
       );
 
-      const text = await response.text();
+      const data = await res.json();
 
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        console.error('Non-JSON response:', text);
-        throw new Error('Server returned invalid JSON');
+      if (!data.success) {
+        throw new Error(data.error);
       }
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Booking failed');
-      }
-
-      alert('Booking request submitted successfully!');
+      alert('Booking submitted successfully');
       form.reset();
 
-      if (typeof resetBooking === 'function') {
-        resetBooking();
-      }
-
     } catch (err) {
-      console.error('Booking submit error:', err);
+      console.error(err);
       alert(err.message);
     }
   });
