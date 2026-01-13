@@ -42,7 +42,7 @@ function attachFormHandler() {
 
     try {
       const res = await fetch(
-        'https://bagares-api.onrender.com/api/submit_booking.php',
+        '../api/submit_booking.php',
         {
           method: 'POST',
           headers: {
