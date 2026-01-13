@@ -71,42 +71,42 @@ function nextStep(step) {
     }
 
     // Validation for step 2 - ONLY when moving forward to step 3
-if (currentStep === 2 && step === 3) {
-    const firstname = document.getElementById('firstname');
-    const middlename = document.getElementById('middlename');
-    const lastname = document.getElementById('lastname');
-    const address = document.getElementById('address');
-    const birthdate = document.getElementById('birthdate');
-    const email = document.getElementById('email');
+    if (currentStep === 2 && step === 3) {
+        const firstname = document.getElementById('firstname');
+        const middlename = document.getElementById('middlename');
+        const lastname = document.getElementById('lastname');
+        const address = document.getElementById('address');
+        const birthdate = document.getElementById('birthdate');
+        const email = document.getElementById('email');
 
-    // Check if all required fields are filled (NO PHONE)
-    if (!firstname.value.trim() || !middlename.value.trim() || !lastname.value.trim() || 
-        !address.value.trim() || !birthdate.value || !email.value.trim()) {
-        alert('Please complete all required fields');
-        return;
+        // Check if all required fields are filled (NO PHONE)
+        if (!firstname.value.trim() || !middlename.value.trim() || !lastname.value.trim() || 
+            !address.value.trim() || !birthdate.value || !email.value.trim()) {
+            alert('Please complete all required fields');
+            return;
+        }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.value)) {
+            alert('Please enter a valid email address');
+            return;
+        }
+
+        // Store step 2 data (NO PHONE)
+        bookingData.firstname = firstname.value.trim();
+        bookingData.middlename = middlename.value.trim();
+        bookingData.lastname = lastname.value.trim();
+        bookingData.suffix = document.getElementById('suffix').value.trim();
+        bookingData.fullname = `${bookingData.firstname} ${bookingData.middlename} ${bookingData.lastname}${bookingData.suffix ? ' ' + bookingData.suffix : ''}`;
+        bookingData.address = address.value.trim();
+        bookingData.birthdate = birthdate.value;
+        bookingData.email = email.value.trim();
+        // NO PHONE stored
+
+        // Generate confirmation summary
+        generateConfirmation();
     }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.value)) {
-        alert('Please enter a valid email address');
-        return;
-    }
-
-    // Store step 2 data (NO PHONE)
-    bookingData.firstname = firstname.value.trim();
-    bookingData.middlename = middlename.value.trim();
-    bookingData.lastname = lastname.value.trim();
-    bookingData.suffix = document.getElementById('suffix').value.trim();
-    bookingData.fullname = `${bookingData.firstname} ${bookingData.middlename} ${bookingData.lastname}${bookingData.suffix ? ' ' + bookingData.suffix : ''}`;
-    bookingData.address = address.value.trim();
-    bookingData.birthdate = birthdate.value;
-    bookingData.email = email.value.trim();
-    // NO PHONE stored
-
-    // Generate confirmation summary
-    generateConfirmation();
-}
 
     // Hide current step
     const currentStepEl = document.getElementById(`step-${currentStep}`);
@@ -288,18 +288,6 @@ function generateConfirmation() {
             <div class="summary-content">
                 <div class="summary-label">Email</div>
                 <div class="summary-value">${bookingData.email}</div>
-            </div>
-        </div>
-
-        <div class="summary-item">
-            <div class="summary-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                </svg>
-            </div>
-            <div class="summary-content">
-                <div class="summary-label">Phone</div>
-                <div class="summary-value">${bookingData.phone}</div>
             </div>
         </div>
     `;

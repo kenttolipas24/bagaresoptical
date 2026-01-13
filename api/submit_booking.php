@@ -3,10 +3,23 @@
 // submit_booking.php (PRODUCTION)
 // ===================================
 
-// CORS — must be FIRST, before any output
-header("Access-Control-Allow-Origin: https://bagaresoptical-com.onrender.com");
+// ✅ FIX: Allow BOTH domains
+$allowed_origins = [
+    'https://bagaresoptical-com.onrender.com',
+    'https://bagares-api.onrender.com'
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+if (in_array($origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: $origin");
+} else {
+    header("Access-Control-Allow-Origin: https://bagaresoptical-com.onrender.com");
+}
+
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Max-Age: 86400");
 header("Content-Type: application/json");
 
@@ -122,6 +135,7 @@ try {
 
     echo json_encode([
         "success" => true,
+        "message" => "Booking submitted successfully",
         "request_id" => $stmt->insert_id
     ]);
 
