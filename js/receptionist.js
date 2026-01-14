@@ -71,60 +71,7 @@ function setupNavigation() {
     });
 }
 
-// Show section function
-function showSection(section) {
-    console.log('🔄 Switching to section:', section);
-    
-    // Get all sections by their actual IDs
-    const patientSection = document.getElementById('patient-section');
-    const appointmentSection = document.getElementById('appointment-section');
-    const salesSection = document.getElementById('sales-section');
-    const requestSection = document.getElementById('request-section');
-    
-    console.log('Section elements found:', {
-        patient: !!patientSection,
-        appointment: !!appointmentSection,
-        sales: !!salesSection,
-        request: !!requestSection
-    });
-    
-    // Hide all sections
-    if (patientSection) patientSection.style.display = 'none';
-    if (appointmentSection) appointmentSection.style.display = 'none';
-    if (salesSection) salesSection.style.display = 'none';
-    if (requestSection) requestSection.style.display = 'none';
-    
-    // Show the selected section
-    if (section === 'patient' && patientSection) {
-        patientSection.style.display = 'block';
-        console.log('✅ Patient section shown');
-    } else if (section === 'appointment' && appointmentSection) {
-        appointmentSection.style.display = 'block';
-        console.log('✅ Appointment section shown');
-    } else if (section === 'sales') {
-        if (salesSection) {
-            salesSection.style.display = 'block';
-            console.log('✅ Sales section shown');
-        } else {
-            alert('Sales & Billing section is coming soon!');
-            console.log('⚠️ Sales section not available yet');
-            // Revert to patient section
-            if (patientSection) {
-                patientSection.style.display = 'block';
-                const patientBtn = document.querySelector('[data-page="patient"]');
-                if (patientBtn) {
-                    document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
-                    patientBtn.classList.add('active');
-                }
-            }
-        }
-    } else if (section === 'request' && requestSection) {
-        requestSection.style.display = 'block';
-        console.log('✅ Request section shown');
-    } else {
-        console.error('❌ Section not found:', section);
-    }
-}
+
 
 // Make functions globally accessible
 window.setupNavigation = setupNavigation;
