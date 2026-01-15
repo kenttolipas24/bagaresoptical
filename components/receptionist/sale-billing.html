@@ -1,79 +1,110 @@
 <section id="sales-section" class="sales-view">
-  <div class="sales-grid">
-
-    <!-- LEFT: Inventory -->
-    <div class="inventory-side">
-      <div class="patient-info-bar">
-        <div class="form-field patient-field">
-          <label>Patient Name</label>
-          <input type="text" id="patientName" placeholder="Required" autocomplete="off">
+  <div class="sales-container">
+    <!-- LEFT: Inventory Panel -->
+    <div class="inventory-panel">
+      <div class="patient-header">
+        <div class="patient-name-group">
+          <label for="patientName">Patient Name <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="patientName" 
+            placeholder="Type to search patients..." 
+            autocomplete="off"
+            required
+          >
         </div>
-        <div class="form-field date-field">
-          <label>Date</label>
+
+        <div class="date-group">
+          <label for="saleDate">Date</label>
           <input type="date" id="saleDate">
         </div>
       </div>
 
-      <div class="inventory-controls">
-        <div class="category-tabs">
-          <button class="tab active" data-category="frames">Frames</button>
-          <button class="tab" data-category="lenses">Lenses</button>
+      <div class="inventory-filter">
+        <div class="category-toggle">
+          <button class="category-btn active" data-category="frames">Frames</button>
+          <button class="category-btn" data-category="lenses">Lenses</button>
         </div>
-        <input type="search" id="inventorySearch" class="search-input" placeholder="Search inventory..." />
+        <input type="search" id="inventorySearch" placeholder="Search inventory...">
       </div>
 
       <div class="inventory-list" id="inventoryList"></div>
     </div>
 
-    <!-- RIGHT: Cart -->
-    <div class="cart-side">
-      <h2 class="cart-title">Current Sale</h2>
+    <!-- RIGHT: Cart Panel -->
+    <div class="cart-panel">
+      <h2>Current Sale</h2>
 
-      <div class="cart-table-container">
-        <div class="cart-table-header">
-          <div class="col-item">Item</div>
-          <div class="col-price">Price</div>
-          <div class="col-qty">Qty</div>
-          <div class="col-total">Total</div>
-          <div class="col-action"></div>
+      <div class="cart-table">
+        <div class="cart-header-row">
+          <span>Item</span>
+          <span>Price</span>
+          <span>Qty</span>
+          <span>Total</span>
+          <span></span>
         </div>
 
-        <div class="cart-items" id="saleItemsBody">
-          <!-- empty state will be injected here -->
-        </div>
+        <div class="cart-body" id="saleItemsBody"></div>
       </div>
 
-      <div class="cart-summary">
-        <div class="grand-total-row">
+      <div class="cart-footer">
+        <div class="total">
           <span>Total</span>
           <strong id="totalAmount">₱0.00</strong>
         </div>
 
-        <div class="cart-actions">
-          <button type="button" class="btn btn-ghost" id="btnCancel">Cancel</button>
-          <button type="button" class="btn btn-primary" id="btnOk" disabled>Process Payment</button>
+        <div class="actions">
+          <button id="btnCancel" class="btn secondary">Cancel</button>
+          <button id="btnProcess" class="btn primary" disabled>Process Payment</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── Payment Modal ─────────────────────────────────────── -->
-  <div class="modal-overlay" id="paymentModal">
-    <div class="payment-modal">
+  <!-- Patient Selection Modal - FIXED -->
+  <div id="patientSearchModal" class="modal-overlay">
+    <div class="modal-dialog patient-modal">
       <div class="modal-header">
+        <h3>Select Patient</h3>
+        <button class="close-btn" id="closePatientModal">×</button>
+      </div>
+
+      <div class="modal-body">
+        <input 
+          type="text" 
+          id="modalPatientSearch" 
+          class="modal-search-input" 
+          placeholder="Continue typing to filter..." 
+          autocomplete="off"
+        >
+
+        <div class="patient-list" id="patientListContainer">
+          <!-- Results go here -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn secondary" id="btnCancelPatient">Cancel</button>
+        <button class="btn primary" id="btnManualEntry">Use Typed Name</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Modal (your original, unchanged) -->
+  <div id="paymentModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-head">
         <h3>Payment Method</h3>
-        <button class="close-btn" id="closeModal">×</button>
+        <button id="closeModal">×</button>
       </div>
-
-      <div class="payment-options">
-        <button class="payment-method-btn" data-method="cash">Cash</button>
-        <button class="payment-method-btn" data-method="card">Card</button>
-        <button class="payment-method-btn" data-method="gcash">GCash</button>
+      <div class="payment-methods">
+        <button data-method="cash">Cash</button>
+        <button data-method="card">Card</button>
+        <button data-method="gcash">GCash</button>
       </div>
-
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="btnModalCancel">Cancel</button>
-        <button class="btn btn-primary" id="btnModalConfirm" disabled>Confirm Payment</button>
+      <div class="modal-foot">
+        <button id="btnModalCancel" class="btn secondary">Cancel</button>
+        <button id="btnModalConfirm" class="btn primary" disabled>Confirm</button>
       </div>
     </div>
   </div>

@@ -1,281 +1,356 @@
 // ================================================
-// SALES & BILLING - COMPLETE JAVASCRIPT
+// SALES & BILLING - FINAL WORKING VERSION
+// Fixes tab-navigation timing issue
+// January 2026
 // ================================================
 
+// ────────────────────────────────────────────────
+// GLOBAL STATE
+// ────────────────────────────────────────────────
 let saleItems = [];
 let selectedPaymentMethod = null;
+let salesInitialized = false;
 
+// ────────────────────────────────────────────────
+// INVENTORY (STATIC DEMO DATA)
+// ────────────────────────────────────────────────
 const inventoryData = [
-    { id: 1, name: 'Blue Light Blocking Glasses', category: 'frames', price: 100.00 },
-    { id: 2, name: 'Designer Reading Glasses',     category: 'frames', price:  70.00 },
-    { id: 3, name: 'Ray-Ban Aviator',              category: 'frames', price: 400.00 },
-    { id: 4, name: 'Progressive Lenses',           category: 'lenses', price: 300.00 },
-    { id: 5, name: 'Anti-Reflective Coating',      category: 'lenses', price: 150.00 },
-    { id: 6, name: 'Bifocal Lenses',               category: 'lenses', price: 250.00 },
-    { id: 7, name: 'Sports Glasses',               category: 'frames', price: 320.00 },
-    { id: 8, name: 'Blue Light Lenses',            category: 'lenses', price: 180.00 }
+  { id: 1, name: 'Blue Light Blocking Glasses', category: 'frames', price: 100.00 },
+  { id: 2, name: 'Designer Reading Glasses', category: 'frames', price: 70.00 },
+  { id: 3, name: 'Ray-Ban Aviator', category: 'frames', price: 400.00 },
+  { id: 4, name: 'Progressive Lenses', category: 'lenses', price: 300.00 },
+  { id: 5, name: 'Anti-Reflective Coating', category: 'lenses', price: 150.00 },
+  { id: 6, name: 'Bifocal Lenses', category: 'lenses', price: 250.00 },
+  { id: 7, name: 'Sports Glasses', category: 'frames', price: 320.00 },
+  { id: 8, name: 'Blue Light Lenses', category: 'lenses', price: 180.00 }
 ];
 
-// Load sales & billing HTML then initialize
+// ────────────────────────────────────────────────
+// LOAD HTML COMPONENT ONLY (NO INIT HERE)
+// ────────────────────────────────────────────────
 fetch('../components/receptionist/sale-billing.html')
-    .then(res => res.text())
-    .then(data => {
-        document.getElementById('sales-placeholder').innerHTML = data;
-        initSalesBilling();
-    })
-    .catch(error => {
-        console.error('Error loading sales & billing:', error);
-    });
+  .then(res => res.text())
+  .then(html => {
+    const holder = document.getElementById('sales-placeholder');
+    if (!holder) return;
+    holder.innerHTML = html;
+  })
+  .catch(console.error);
 
-function initSalesBilling() {
-    setupHeaderFields();
-    setupCategoryFilter();
-    setupInventorySearch();
-    setupInventoryClick();
-    setupButtons();
-    setupModal();
-    renderInventory('frames');
+// ────────────────────────────────────────────────
+// EXPOSE INIT FOR TAB NAVIGATION
+// ────────────────────────────────────────────────
+window.initSalesBilling = function () {
+  if (salesInitialized) return;
+  salesInitialized = true;
+
+  setupHeaderFields();
+  setupPatientModalSearch();
+  setupCategoryFilter();
+  setupInventorySearch();
+  setupInventoryClick();
+  setupButtons();
+  setupPaymentModal();
+  renderInventory('frames');
+
+  console.log('Sales billing initialized');
+};
+
+// ────────────────────────────────────────────────
+// PATIENT SEARCH MODAL (FIXED)
+// ────────────────────────────────────────────────
+function setupPatientModalSearch() {
+  const input = document.getElementById('patientName');
+  const modal = document.getElementById('patientSearchModal');
+  const modalInput = document.getElementById('modalPatientSearch');
+  const list = document.getElementById('patientListContainer');
+
+  if (!input || !modal || !modalInput || !list) {
+    console.error('Patient modal elements missing');
+    return;
+  }
+
+  let debounce;
+
+  input.addEventListener('input', () => {
+    const term = input.value.trim();
+    if (term.length < 2) {
+      modal.style.display = 'none';
+      return;
+    }
+    modal.style.display = 'flex';
+    modalInput.value = term;
+    modalInput.focus();
+    fetchPatients(term);
+  });
+
+  modalInput.addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      fetchPatients(modalInput.value.trim());
+    }, 300);
+  });
+
+  document.getElementById('closePatientModal').onclick =
+  document.getElementById('btnCancelPatient').onclick = () => {
+    modal.style.display = 'none';
+    input.blur();
+  };
+
+  modal.onclick = e => {
+    if (e.target === modal) modal.style.display = 'none';
+  };
 }
 
-function setupHeaderFields() {
-    const dateInput = document.getElementById('saleDate');
-    if (dateInput) {
-        dateInput.value = new Date().toISOString().split('T')[0];
+// ────────────────────────────────────────────────
+// FETCH PATIENTS
+// ────────────────────────────────────────────────
+async function fetchPatients(term) {
+  const container = document.getElementById('patientListContainer');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="loading-state">
+      <div class="spinner"></div>
+      Loading patients...
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`../api/search_patients.php?search=${encodeURIComponent(term)}`);
+    if (!res.ok) throw new Error(res.status);
+
+    const patients = await res.json();
+    container.innerHTML = '';
+
+    if (!patients.length) {
+      container.innerHTML = `<div class="no-results">No patients found</div>`;
+      return;
     }
+
+    patients.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'patient-card';
+      card.innerHTML = `
+        <div class="patient-avatar">${getInitials(p.name)}</div>
+        <div class="patient-info">
+          <h4>${p.name}</h4>
+          <div class="meta">ID: ${p.id} • ${p.appointment_date || 'No appointment'}</div>
+        </div>
+      `;
+      card.onclick = () => {
+        document.getElementById('patientName').value = p.name;
+        document.getElementById('patientSearchModal').style.display = 'none';
+        document.getElementById('patientName').blur();
+      };
+      container.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = `<div class="no-results">Error loading patients</div>`;
+  }
+}
+
+function getInitials(name) {
+  if (!name) return '?';
+  const p = name.trim().split(/\s+/);
+  return (p[0][0] + (p[1]?.[0] || '')).toUpperCase();
+}
+
+// ────────────────────────────────────────────────
+// HEADER
+// ────────────────────────────────────────────────
+function setupHeaderFields() {
+  const date = document.getElementById('saleDate');
+  if (date) date.value = new Date().toISOString().split('T')[0];
 }
 
 function validateHeaderFields() {
-    const patientName = document.getElementById('patientName')?.value.trim();
-    const saleDate = document.getElementById('saleDate')?.value;
-
-    if (!patientName) {
-        alert('Please enter patient name');
-        return false;
-    }
-    if (!saleDate) {
-        alert('Please select a date');
-        return false;
-    }
-    return true;
+  if (!document.getElementById('patientName').value.trim()) {
+    alert('Please select a patient');
+    return false;
+  }
+  return true;
 }
 
+// ────────────────────────────────────────────────
+// INVENTORY
+// ────────────────────────────────────────────────
 function setupCategoryFilter() {
-    document.querySelectorAll('.filter-btn, .tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn, .tab-btn')
-                .forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            const category = btn.dataset.category;
-            renderInventory(category);
-        });
-    });
+  document.querySelectorAll('.category-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderInventory(btn.dataset.category);
+    };
+  });
 }
 
 function setupInventorySearch() {
-    const searchInput = document.getElementById('inventorySearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const activeCategory = document.querySelector('.filter-btn.active, .tab-btn.active')?.dataset.category || 'frames';
-            renderInventory(activeCategory, term);
-        });
-    }
+  const search = document.getElementById('inventorySearch');
+  if (!search) return;
+
+  search.oninput = e => {
+    const cat = document.querySelector('.category-btn.active')?.dataset.category || 'frames';
+    renderInventory(cat, e.target.value.toLowerCase());
+  };
 }
 
-function renderInventory(category = 'frames', searchTerm = '') {
-    const container = document.getElementById('inventoryList');
-    if (!container) return;
+function renderInventory(category, search = '') {
+  const list = document.getElementById('inventoryList');
+  if (!list) return;
 
-    let items = inventoryData.filter(i => i.category === category);
-    
-    if (searchTerm) {
-        items = items.filter(i => i.name.toLowerCase().includes(searchTerm));
-    }
+  const items = inventoryData.filter(i =>
+    i.category === category && i.name.toLowerCase().includes(search)
+  );
 
-    container.innerHTML = items.length === 0 
-        ? '<div class="empty-cart"><p>No items found</p></div>'
-        : '';
+  list.innerHTML = '';
 
-    items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'inventory-item';
-        div.dataset.itemId = item.id;
-        div.innerHTML = `
-            <div class="item-info">
-                <div class="item-name">${item.name}</div>
-                <div class="item-category">${item.category}</div>
-            </div>
-            <div class="item-price">₱${item.price.toFixed(2)}</div>
-        `;
-        container.appendChild(div);
-    });
+  if (!items.length) {
+    list.innerHTML = `<div class="empty-cart">No items found</div>`;
+    return;
+  }
+
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'inventory-item';
+    el.dataset.id = item.id;
+    el.innerHTML = `
+      <div>
+        <div class="item-name">${item.name}</div>
+        <div class="item-category">${item.category}</div>
+      </div>
+      <div class="item-price">₱${item.price.toFixed(2)}</div>
+    `;
+    list.appendChild(el);
+  });
 }
 
 function setupInventoryClick() {
-    document.addEventListener('click', e => {
-        const item = e.target.closest('.inventory-item');
-        if (item) {
-            const id = parseInt(item.dataset.itemId);
-            addToSale(id);
-        }
-    });
+  document.addEventListener('click', e => {
+    const item = e.target.closest('.inventory-item');
+    if (item) addToSale(+item.dataset.id);
+  });
 }
 
-function addToSale(itemId) {
-    const item = inventoryData.find(i => i.id === itemId);
-    if (!item) return;
+// ────────────────────────────────────────────────
+// SALE LOGIC
+// ────────────────────────────────────────────────
+function addToSale(id) {
+  const item = inventoryData.find(i => i.id === id);
+  if (!item) return;
 
-    const existing = saleItems.find(i => i.id === itemId);
-    if (existing) {
-        existing.quantity++;
-    } else {
-        saleItems.push({ ...item, quantity: 1 });
-    }
+  const existing = saleItems.find(i => i.id === id);
+  existing ? existing.quantity++ : saleItems.push({ ...item, quantity: 1 });
 
-    renderSaleItems();
-    updateTotal();
+  renderSaleItems();
+  updateTotal();
 }
 
 function renderSaleItems() {
-    const container = document.getElementById('saleItemsBody');
-    if (!container) return;
+  const body = document.getElementById('saleItemsBody');
+  if (!body) return;
 
-    if (saleItems.length === 0) {
-        container.innerHTML = `
-            <div class="empty-cart">
-                <div class="empty-icon">🛒</div>
-                <p>No items added yet</p>
-            </div>
-        `;
-        return;
-    }
+  body.innerHTML = saleItems.length
+    ? ''
+    : `<div class="empty-cart">🛒 No items added</div>`;
 
-    container.innerHTML = '';
+  saleItems.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'sale-item-row';
+    row.innerHTML = `
+      <div>${item.name}</div>
+      <div>₱${item.price.toFixed(2)}</div>
+      <div>
+        <button class="qty" data-id="${item.id}" data-d="-1">−</button>
+        ${item.quantity}
+        <button class="qty" data-id="${item.id}" data-d="1">+</button>
+      </div>
+      <div>₱${(item.price * item.quantity).toFixed(2)}</div>
+      <button class="remove" data-id="${item.id}">×</button>
+    `;
+    body.appendChild(row);
+  });
 
-    saleItems.forEach(item => {
-        const total = item.price * item.quantity;
-        const row = document.createElement('div');
-        row.className = 'sale-item-row';
-        row.innerHTML = `
-            <div class="sale-item-name">${item.name}</div>
-            <div class="sale-item-price">₱${item.price.toFixed(2)}</div>
-            <div class="quantity-controls">
-                <button class="qty-btn qty-decrease" data-item-id="${item.id}">−</button>
-                <span class="qty-value">${item.quantity}</span>
-                <button class="qty-btn qty-increase" data-item-id="${item.id}">+</button>
-            </div>
-            <div class="sale-item-total">₱${total.toFixed(2)}</div>
-            <button class="btn-remove" data-item-id="${item.id}">×</button>
-        `;
-        container.appendChild(row);
-    });
-
-    setupSaleItemControls();
+  document.querySelectorAll('.qty').forEach(b =>
+    b.onclick = () => changeQuantity(b.dataset.id, +b.dataset.d)
+  );
+  document.querySelectorAll('.remove').forEach(b =>
+    b.onclick = () => removeItem(b.dataset.id)
+  );
 }
 
-function setupSaleItemControls() {
-    document.querySelectorAll('.qty-decrease').forEach(btn => {
-        btn.addEventListener('click', () => changeQuantity(parseInt(btn.dataset.itemId), -1));
-    });
-    
-    document.querySelectorAll('.qty-increase').forEach(btn => {
-        btn.addEventListener('click', () => changeQuantity(parseInt(btn.dataset.itemId), 1));
-    });
-    
-    document.querySelectorAll('.btn-remove').forEach(btn => {
-        btn.addEventListener('click', () => removeItem(parseInt(btn.dataset.itemId)));
-    });
+function changeQuantity(id, d) {
+  const item = saleItems.find(i => i.id == id);
+  if (!item) return;
+  item.quantity += d;
+  if (item.quantity <= 0) removeItem(id);
+  renderSaleItems();
+  updateTotal();
 }
 
-function changeQuantity(itemId, delta) {
-    const item = saleItems.find(i => i.id === itemId);
-    if (!item) return;
-
-    item.quantity = Math.max(0, item.quantity + delta);
-    
-    if (item.quantity === 0) {
-        removeItem(itemId);
-    } else {
-        renderSaleItems();
-        updateTotal();
-    }
-}
-
-function removeItem(itemId) {
-    saleItems = saleItems.filter(i => i.id !== itemId);
-    renderSaleItems();
-    updateTotal();
+function removeItem(id) {
+  saleItems = saleItems.filter(i => i.id != id);
+  renderSaleItems();
+  updateTotal();
 }
 
 function updateTotal() {
-    const total = saleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    document.getElementById('totalAmount').textContent = `₱${total.toFixed(2)}`;
-    
-    const okBtn = document.getElementById('btnOk');
-    if (okBtn) okBtn.disabled = saleItems.length === 0;
+  const total = saleItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  document.getElementById('totalAmount').textContent = `₱${total.toFixed(2)}`;
+  document.getElementById('btnProcess').disabled = !saleItems.length;
 }
 
+// ────────────────────────────────────────────────
+// PAYMENT
+// ────────────────────────────────────────────────
 function setupButtons() {
-    document.getElementById('btnCancel')?.addEventListener('click', () => {
-        if (saleItems.length > 0 && confirm('Cancel this sale?')) {
-            saleItems = [];
-            renderSaleItems();
-            updateTotal();
-        }
-    });
+  document.getElementById('btnProcess').onclick = () => {
+    if (validateHeaderFields())
+      document.getElementById('paymentModal').style.display = 'flex';
+  };
 
-    document.getElementById('btnOk')?.addEventListener('click', () => {
-        if (saleItems.length === 0) return;
-        if (!validateHeaderFields()) return;
-        document.getElementById('paymentModal').style.display = 'flex';
-    });
+  document.getElementById('btnCancel').onclick = () => {
+    if (confirm('Cancel sale?')) {
+      saleItems = [];
+      renderSaleItems();
+      updateTotal();
+    }
+  };
 }
 
-function setupModal() {
-    const modal = document.getElementById('paymentModal');
-    if (!modal) return;
+function setupPaymentModal() {
+  const modal = document.getElementById('paymentModal');
+  if (!modal) return;
 
-    document.getElementById('closeModal')?.addEventListener('click', () => modal.style.display = 'none');
-    document.getElementById('btnModalCancel')?.addEventListener('click', () => modal.style.display = 'none');
-    modal.querySelector('.modal-backdrop, .modal-overlay')?.addEventListener('click', () => modal.style.display = 'none');
+  document.getElementById('closeModal').onclick =
+  document.getElementById('btnModalCancel').onclick = () => {
+    modal.style.display = 'none';
+  };
 
-    document.querySelectorAll('.payment-option, .payment-btn').forEach(opt => {
-        opt.addEventListener('click', () => {
-            document.querySelectorAll('.payment-option, .payment-btn').forEach(o => o.classList.remove('selected', 'active'));
-            opt.classList.add('selected', 'active');
-            selectedPaymentMethod = opt.dataset.method;
-            document.getElementById('btnModalConfirm').disabled = false;
-        });
-    });
+  modal.onclick = e => {
+    if (e.target === modal) modal.style.display = 'none';
+  };
 
-    document.getElementById('btnModalConfirm')?.addEventListener('click', () => {
-        if (selectedPaymentMethod) {
-            completeSale();
-        }
-    });
+  document.querySelectorAll('.payment-methods button').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.payment-methods button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedPaymentMethod = btn.dataset.method;
+      document.getElementById('btnModalConfirm').disabled = false;
+    };
+  });
+
+  document.getElementById('btnModalConfirm').onclick = completeSale;
 }
 
 function completeSale() {
-    const patientName = document.getElementById('patientName')?.value.trim() || 'Walk-in';
-    const saleDate = document.getElementById('saleDate')?.value || new Date().toISOString().split('T')[0];
-    const total = saleItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-
-    const saleRecord = {
-        patientName,
-        date: saleDate,
-        items: [...saleItems],
-        total,
-        paymentMethod: selectedPaymentMethod,
-        timestamp: new Date().toISOString()
-    };
-
-    console.log('Sale completed:', saleRecord);
-    alert(`Sale completed!\nPatient: ${patientName}\nTotal: ₱${total.toFixed(2)}\nPayment: ${selectedPaymentMethod?.toUpperCase()}`);
-
-    saleItems = [];
-    document.getElementById('patientName').value = '';
-    document.getElementById('paymentModal').style.display = 'none';
-    renderSaleItems();
-    updateTotal();
+  alert('Sale completed successfully!');
+  saleItems = [];
+  selectedPaymentMethod = null;
+  document.getElementById('patientName').value = '';
+  document.getElementById('paymentModal').style.display = 'none';
+  renderSaleItems();
+  updateTotal();
 }
