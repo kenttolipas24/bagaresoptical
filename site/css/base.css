@@ -6,12 +6,24 @@
     box-sizing: border-box;
 }
 
+html {
+    /* === Smooth scrolling for internal links (very important) === */
+    scroll-behavior: smooth;
+    
+    /* Optional: better scroll experience on mobile */
+    scroll-padding-top: 100px;     /* ← prevents content hiding under fixed navbar */
+    scroll-padding-bottom: 80px;   /* ← breathing room at bottom */
+}
+
 body {
     font-family: var(--font-family);
     background: var(--color-background);
     color: var(--color-text-primary);
     line-height: var(--line-height-normal);
     overflow-x: hidden;
+    
+    /* Helps with smooth scrolling feeling */
+    scroll-behavior: smooth;       /* fallback in case browser ignores html level */
 }
 
 /* Container */
@@ -28,17 +40,9 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--color-text-primary);
 }
 
-h1 {
-    font-size: var(--font-size-6xl);
-}
-
-h2 {
-    font-size: var(--font-size-4xl);
-}
-
-h3 {
-    font-size: var(--font-size-2xl);
-}
+h1 { font-size: var(--font-size-6xl); }
+h2 { font-size: var(--font-size-4xl); }
+h3 { font-size: var(--font-size-2xl); }
 
 p {
     line-height: var(--line-height-relaxed);
@@ -49,6 +53,19 @@ a {
     text-decoration: none;
     color: inherit;
     transition: color var(--transition-normal);
+}
+
+/* === When user lands on section via #hash in URL === */
+:target {
+    /* Very subtle highlight animation when jumped to via anchor */
+    animation: target-highlight 2.2s ease-out;
+    outline: none;
+}
+
+@keyframes target-highlight {
+    0%   { background-color: rgba(var(--color-primary-rgb), 0.12); }
+    80%  { background-color: rgba(var(--color-primary-rgb), 0.06); }
+    100% { background-color: transparent; }
 }
 
 /* Buttons */
@@ -94,13 +111,8 @@ a {
 }
 
 /* Utility Classes */
-.hidden {
-    display: none !important;
-}
-
-.text-center {
-    text-align: center;
-}
+.hidden           { display: none !important; }
+.text-center      { text-align: center; }
 
 .mt-1 { margin-top: var(--spacing-md); }
 .mt-2 { margin-top: var(--spacing-xl); }
@@ -110,9 +122,13 @@ a {
 .mb-2 { margin-bottom: var(--spacing-xl); }
 .mb-3 { margin-bottom: var(--spacing-2xl); }
 
-/* Sections */
+/* Sections - important for scroll padding */
 section {
     padding: var(--spacing-3xl) 0;
+    
+    /* Additional safety for fixed/sticky headers */
+    scroll-margin-top: 100px;      /* ← most important value - adjust according to your navbar height */
+    scroll-margin-bottom: 40px;
 }
 
 .section-subtitle {
@@ -121,14 +137,13 @@ section {
     margin-top: var(--spacing-sm);
 }
 
-/* Images */
+/* Images & Placeholders */
 img {
     max-width: 100%;
     height: auto;
     display: block;
 }
 
-/* Placeholder Images */
 .placeholder-img,
 .placeholder-detail-img,
 .placeholder-doctor-img,
@@ -141,12 +156,8 @@ img {
     background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
     border-radius: var(--radius-md);
     font-size: 3rem;
+    color: rgba(0,0,0,0.25);
 }
 
-.placeholder-detail-img {
-    min-height: 300px;
-}
-
-.placeholder-doctor-img {
-    min-height: 400px;
-}
+.placeholder-detail-img { min-height: 300px; }
+.placeholder-doctor-img { min-height: 400px; }

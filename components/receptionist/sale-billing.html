@@ -1,138 +1,79 @@
-<!-- Sales & Billing Section -->
-<section id="sales-section" style="display: none;">
-  <div class="sales-container">
-    <!-- Header Tabs -->
-    <div class="sales-tabs">
-      <button class="tab-btn active" data-tab="inventory">Inventory</button>
-      <button class="tab-btn" data-tab="sales">Sales</button>
-    </div>
+<section id="sales-section" class="sales-view">
+  <div class="sales-grid">
 
-    <div class="sales-content-wrapper">
-      <!-- Left Panel: Inventory -->
-      <div class="inventory-panel">
-        <div class="category-filter">
-          <button class="filter-btn active" data-category="all">Frames</button>
-          <button class="filter-btn" data-category="lenses">Lenses</button>
-          <div class="search-container">
-            <input type="text" id="inventorySearch" placeholder="Search Item...">
-          </div>
+    <!-- LEFT: Inventory -->
+    <div class="inventory-side">
+      <div class="patient-info-bar">
+        <div class="form-field patient-field">
+          <label>Patient Name</label>
+          <input type="text" id="patientName" placeholder="Required" autocomplete="off">
         </div>
-
-        <div class="inventory-list" id="inventoryList">
-          <!-- Sample Items -->
-          <div class="inventory-item" data-item-id="1">
-            <div class="item-info">
-              <span class="item-name">Blue Light Blocking Glasses</span>
-              <span class="item-category">Frames</span>
-            </div>
-            <div class="item-price">₱100.00</div>
-          </div>
-
-          <div class="inventory-item" data-item-id="2">
-            <div class="item-info">
-              <span class="item-name">Designer Reading Glasses</span>
-              <span class="item-category">Frames</span>
-            </div>
-            <div class="item-price">₱70.00</div>
-          </div>
-
-          <div class="inventory-item" data-item-id="3">
-            <div class="item-info">
-              <span class="item-name">Ray-Ban Aviator</span>
-              <span class="item-category">Frames</span>
-            </div>
-            <div class="item-price">₱400.00</div>
-          </div>
-
-          <div class="inventory-item" data-item-id="4">
-            <div class="item-info">
-              <span class="item-name">Progressive Lenses</span>
-              <span class="item-category">Lenses</span>
-            </div>
-            <div class="item-price">₱300.00</div>
-          </div>
-
-          <div class="inventory-item" data-item-id="5">
-            <div class="item-info">
-              <span class="item-name">Anti-Reflective Coating</span>
-              <span class="item-category">Lenses</span>
-            </div>
-            <div class="item-price">₱150.00</div>
-          </div>
+        <div class="form-field date-field">
+          <label>Date</label>
+          <input type="date" id="saleDate">
         </div>
       </div>
 
-      <!-- Right Panel: Sale Items -->
-      <div class="sale-items-panel">
-        <h3 class="panel-title">Sale Items</h3>
+      <div class="inventory-controls">
+        <div class="category-tabs">
+          <button class="tab active" data-category="frames">Frames</button>
+          <button class="tab" data-category="lenses">Lenses</button>
+        </div>
+        <input type="search" id="inventorySearch" class="search-input" placeholder="Search inventory..." />
+      </div>
 
-        <div class="sale-items-table">
-          <div class="table-header">
-            <span>Item</span>
-            <span>Unit Price</span>
-            <span>Quantity</span>
-            <span>Total</span>
-            <span>Actions</span>
-          </div>
+      <div class="inventory-list" id="inventoryList"></div>
+    </div>
 
-          <div class="table-body" id="saleItemsBody">
-            <!-- Empty state -->
-            <div class="empty-state" id="emptyState">
-              <p>No items added</p>
-            </div>
-          </div>
+    <!-- RIGHT: Cart -->
+    <div class="cart-side">
+      <h2 class="cart-title">Current Sale</h2>
+
+      <div class="cart-table-container">
+        <div class="cart-table-header">
+          <div class="col-item">Item</div>
+          <div class="col-price">Price</div>
+          <div class="col-qty">Qty</div>
+          <div class="col-total">Total</div>
+          <div class="col-action"></div>
         </div>
 
-        <div class="sale-footer">
-          <div class="total-section">
-            <span class="total-label">Total:</span>
-            <span class="total-amount" id="totalAmount">₱0.00</span>
-          </div>
-          <div class="action-buttons">
-            <button class="btn-cancel" id="btnCancel">Cancel</button>
-            <button class="btn-ok" id="btnOk">OK</button>
-          </div>
+        <div class="cart-items" id="saleItemsBody">
+          <!-- empty state will be injected here -->
+        </div>
+      </div>
+
+      <div class="cart-summary">
+        <div class="grand-total-row">
+          <span>Total</span>
+          <strong id="totalAmount">₱0.00</strong>
+        </div>
+
+        <div class="cart-actions">
+          <button type="button" class="btn btn-ghost" id="btnCancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btnOk" disabled>Process Payment</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Payment Method Modal -->
-  <div class="payment-modal" id="paymentModal" style="display: none;">
-    <div class="modal-overlay"></div>
-    <div class="modal-content">
+  <!-- ── Payment Modal ─────────────────────────────────────── -->
+  <div class="modal-overlay" id="paymentModal">
+    <div class="payment-modal">
       <div class="modal-header">
-        <h3>Select Payment Method</h3>
-        <button class="modal-close" id="closeModal">&times;</button>
+        <h3>Payment Method</h3>
+        <button class="close-btn" id="closeModal">×</button>
       </div>
-      <div class="modal-body">
-        <div class="payment-options">
-          <button class="payment-option" data-method="cash">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="7" width="20" height="14" rx="2"></rect>
-              <path d="M12 11c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"></path>
-            </svg>
-            <span>Cash</span>
-          </button>
-          <button class="payment-option" data-method="card">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="1" y="4" width="22" height="16" rx="2"></rect>
-              <line x1="1" y1="10" x2="23" y2="10"></line>
-            </svg>
-            <span>Card</span>
-          </button>
-          <button class="payment-option" data-method="gcash">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="5" y="2" width="14" height="20" rx="2"></rect>
-              <line x1="12" y1="18" x2="12" y2="18"></line>
-            </svg>
-            <span>GCash</span>
-          </button>
-        </div>
+
+      <div class="payment-options">
+        <button class="payment-method-btn" data-method="cash">Cash</button>
+        <button class="payment-method-btn" data-method="card">Card</button>
+        <button class="payment-method-btn" data-method="gcash">GCash</button>
       </div>
-      <div class="modal-footer">
-        <button class="btn-modal-cancel" id="btnModalCancel">Cancel</button>
-        <button class="btn-modal-confirm" id="btnModalConfirm">Confirm Payment</button>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btnModalCancel">Cancel</button>
+        <button class="btn btn-primary" id="btnModalConfirm" disabled>Confirm Payment</button>
       </div>
     </div>
   </div>
