@@ -1,111 +1,168 @@
-// Load add-item-modal.html
+// ============================================================
+// ADD ITEM MODAL COMPONENT - add-item-modal.js
+// ============================================================
+
+// 1. Load the add-item-modal.html content
 fetch('../components/modals/manager/add-item-modal.html')
   .then(res => res.text())
   .then(data => {
-    document.getElementById('add-item-modal-placeholder').innerHTML = data;
-    initializeAddItemModal();
+    const placeholder = document.getElementById('add-item-modal-placeholder');
+    if (placeholder) {
+        placeholder.innerHTML = data;
+        initializeAddItemModal();
+    }
   })
   .catch(error => console.error('Error loading add item modal:', error));
 
-// Initialize after modal is loaded
+/**
+ * INITIALIZE MODAL LOGIC
+ */
 function initializeAddItemModal() {
     const form = document.getElementById('addItemForm');
     const modal = document.getElementById('addItemModal');
+    const submitBtn = document.getElementById('addItemBtn');
 
-    if (!form || !modal) return;
+    if (!form || !modal || !submitBtn) return;
 
-    // Open modal
+    /**
+     * OPEN MODAL
+     * Attached to window so it can be called from the "Add Item" button in frame.html
+     */
     window.openAddItemModal = function() {
         modal.classList.add('show');
         form.reset();
+        // Clear all previous error states
         document.querySelectorAll('.error-text').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.form-input').forEach(el => el.style.borderColor = '#d1d5db');
     };
 
-    // Close modal
+    /**
+     * CLOSE MODAL
+     */
     window.closeAddItemModal = function() {
         modal.classList.remove('show');
         form.reset();
-        document.querySelectorAll('.error-text').forEach(el => el.classList.add('hidden'));
     };
 
-    // Validate single field
+    /**
+     * VALIDATION LOGIC
+     */
     function validateField(field) {
         const value = field.value.trim();
         const errorEl = document.getElementById(field.id + 'Error');
 
         if (field.hasAttribute('required') && !value) {
-            field.style.borderColor = '#dc2626';
-            if (errorEl) {
-                errorEl.textContent = `${field.previousElementSibling.textContent.replace('*', '').trim()} is required`;
-                errorEl.classList.remove('hidden');
-            }
+            field.style.borderColor = '#dc2626'; // Red border
+            if (errorEl) errorEl.classList.remove('hidden');
             return false;
+        } else {
+            field.style.borderColor = '#d1d5db'; // Reset border
+            if (errorEl) errorEl.classList.add('hidden');
+            return true;
         }
-
-        field.style.borderColor = '#d1d5db';
-        if (errorEl) errorEl.classList.add('hidden');
-        return true;
     }
 
-    // Form submit
-    form.addEventListener('submit', function(e) {
+    /**
+     * FORM SUBMISSION
+     */
+    submitBtn.addEventListener('click', async function(e) {
         e.preventDefault();
 
-        const fields = form.querySelectorAll('input[required], select[required]');
+        // 1. Validate all required fields before sending
+        const inputs = form.querySelectorAll('input[required], select[required]');
         let isValid = true;
-
-        fields.forEach(field => {
-            if (!validateField(field)) isValid = false;
+        inputs.forEach(input => {
+            if (!validateField(input)) isValid = false;
         });
 
         if (!isValid) return;
 
-        const submitBtn = document.getElementById('addItemBtn');
+        // 2. Show loading state & disable button to prevent double-clicks
         submitBtn.disabled = true;
-        submitBtn.querySelector('.btn-text').classList.add('hidden');
-        submitBtn.querySelector('.btn-loading').classList.remove('hidden');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const btnLoading = submitBtn.querySelector('.btn-loading');
+        
+        if (btnText) btnText.classList.add('hidden');
+        if (btnLoading) btnLoading.classList.remove('hidden');
 
-        // Simulate API call
-        setTimeout(() => {
-            const newItem = {
-                productName: document.getElementById('addProductName').value.trim(),
-                sku: document.getElementById('addSKU').value.trim(),
-                category: document.getElementById('addCategory').value,
-                unitPrice: parseFloat(document.getElementById('addUnitPrice').value),
-                stockQuantity: parseInt(document.getElementById('addStockQuantity').value),
-            };
+        // 3. Prepare Data for PHP (Must match your DB column names)
+        const formData = new FormData();
+        formData.append('product_name', document.getElementById('addProductName').value.trim());
+        formData.append('sku', document.getElementById('addSKU').value.trim());
+        formData.append('category', document.getElementById('addCategory').value);
+        formData.append('price', document.getElementById('addUnitPrice').value);
+        formData.append('stock', document.getElementById('addStockQuantity').value);
 
-            console.log('New item added:', newItem);
-            // Here you would normally send to backend
-            // window.renderItems(); // if you have a render function
+        try {
+            // 4. API Call to backend
+            const response = await fetch('../api/add_inventory_item.php', {
+                method: 'POST',
+                body: formData
+            });
 
-            closeAddItemModal();
-            alert('Item added successfully!');
+            // Ensure the response is valid JSON
+            const text = await response.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                throw new Error("Server sent invalid response: " + text);
+            }
 
+            if (result.status === 'success') {
+                alert('Item added successfully!');
+                closeAddItemModal();
+                
+                // 5. REFRESH the main inventory table if frame.js is loaded
+                if (window.fetchInventoryFromDB) {
+                    window.fetchInventoryFromDB();
+                } else {
+                    location.reload(); 
+                }
+            } else {
+                alert('Error: ' + (result.message || 'Failed to save item.'));
+            }
+
+        } catch (error) {
+            console.error('Submission error:', error);
+            alert('A server error occurred. Please check your connection and try again.');
+        } finally {
+            // 6. Restore button state
             submitBtn.disabled = false;
-            submitBtn.querySelector('.btn-text').classList.remove('hidden');
-            submitBtn.querySelector('.btn-loading').classList.add('hidden');
-        }, 1000);
+            if (btnText) btnText.classList.remove('hidden');
+            if (btnLoading) btnLoading.classList.add('hidden');
+        }
     });
 
-    // Real-time validation
+    /**
+     * REAL-TIME UI FEEDBACK
+     */
     form.querySelectorAll('input, select').forEach(field => {
+        // Clear error when user starts typing again
+        field.addEventListener('input', () => {
+            if (field.value.trim() !== "") {
+                field.style.borderColor = '#d1d5db';
+                const errorEl = document.getElementById(field.id + 'Error');
+                if (errorEl) errorEl.classList.add('hidden');
+            }
+        });
+        
+        // Validate when user leaves the field
         field.addEventListener('blur', () => validateField(field));
-        field.addEventListener('input', () => validateField(field));
     });
 
-    // Close on outside click
-    modal.addEventListener('click', function(e) {
+    /**
+     * ACCESSIBILITY & UX
+     */
+    // Close on background click
+    modal.addEventListener('click', (e) => {
         if (e.target === modal) closeAddItemModal();
     });
 
-    // ESC key
-    document.addEventListener('keydown', function(e) {
+    // Close on ESC key
+    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modal.classList.contains('show')) {
             closeAddItemModal();
         }
     });
 }
-
-// Call this after injecting the modal HTML
-// initializeAddItemModal();

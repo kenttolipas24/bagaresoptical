@@ -108,6 +108,18 @@
   font-size: 0.9rem;
 }
 
+/* Ensure the prescription cell doesn't look cramped */
+.patient-table td {
+    vertical-align: middle;
+    padding: 1rem 0.75rem;
+}
+
+/* Style for the OD/OS labels */
+.patient-table strong {
+    color: #475569;
+    font-size: 0.75rem;
+}
+
 .patient-table thead {
   background: #f1f5f9;
 }
