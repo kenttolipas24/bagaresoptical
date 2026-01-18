@@ -71,6 +71,25 @@ function setupNavigation() {
     });
 }
 
+function showSection(page) {
+  // Hide all sections
+  document.querySelectorAll('section').forEach(sec => {
+    sec.style.display = 'none';
+  });
+
+  // Show selected section
+  const section = document.getElementById(`${page}-section`);
+  if (section) {
+    section.style.display = 'block';
+  }
+
+  // 🔥 IMPORTANT FIX: Initialize Sales & Billing
+  if (page === 'sales') {
+    if (typeof window.initSalesBilling === 'function') {
+      window.initSalesBilling();
+    }
+  }
+}
 
 
 // Make functions globally accessible

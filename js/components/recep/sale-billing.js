@@ -1,6 +1,6 @@
 // ================================================
-// SALES & BILLING - FINAL WORKING VERSION
-// Fixes tab-navigation timing issue
+// SALES & BILLING - REAL DATA VERSION
+// Fetches inventory from database
 // January 2026
 // ================================================
 
@@ -10,20 +10,7 @@
 let saleItems = [];
 let selectedPaymentMethod = null;
 let salesInitialized = false;
-
-// ────────────────────────────────────────────────
-// INVENTORY (STATIC DEMO DATA)
-// ────────────────────────────────────────────────
-const inventoryData = [
-  { id: 1, name: 'Blue Light Blocking Glasses', category: 'frames', price: 100.00 },
-  { id: 2, name: 'Designer Reading Glasses', category: 'frames', price: 70.00 },
-  { id: 3, name: 'Ray-Ban Aviator', category: 'frames', price: 400.00 },
-  { id: 4, name: 'Progressive Lenses', category: 'lenses', price: 300.00 },
-  { id: 5, name: 'Anti-Reflective Coating', category: 'lenses', price: 150.00 },
-  { id: 6, name: 'Bifocal Lenses', category: 'lenses', price: 250.00 },
-  { id: 7, name: 'Sports Glasses', category: 'frames', price: 320.00 },
-  { id: 8, name: 'Blue Light Lenses', category: 'lenses', price: 180.00 }
-];
+let inventoryData = []; // Will be populated from database
 
 // ────────────────────────────────────────────────
 // LOAD HTML COMPONENT ONLY (NO INIT HERE)
@@ -40,9 +27,12 @@ fetch('../components/receptionist/sale-billing.html')
 // ────────────────────────────────────────────────
 // EXPOSE INIT FOR TAB NAVIGATION
 // ────────────────────────────────────────────────
-window.initSalesBilling = function () {
+window.initSalesBilling = async function () {
   if (salesInitialized) return;
   salesInitialized = true;
+
+  // Load inventory from database
+  await loadInventoryFromDB();
 
   setupHeaderFields();
   setupPatientModalSearch();
@@ -51,10 +41,64 @@ window.initSalesBilling = function () {
   setupInventoryClick();
   setupButtons();
   setupPaymentModal();
+  
+  // Render frames by default
   renderInventory('frames');
 
-  console.log('Sales billing initialized');
+  console.log('Sales billing initialized with real data');
 };
+
+// ────────────────────────────────────────────────
+// LOAD INVENTORY FROM DATABASE
+// ────────────────────────────────────────────────
+async function loadInventoryFromDB() {
+  const list = document.getElementById('inventoryList');
+  if (list) {
+    list.innerHTML = `
+      <div style="text-align:center; padding:40px; color:#666;">
+        <div class="spinner" style="margin:0 auto 15px;"></div>
+        Loading inventory...
+      </div>
+    `;
+  }
+
+  try {
+    const res = await fetch('../api/get_inventory.php');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
+    const data = await res.json();
+    
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    // Transform and sanitize data
+    inventoryData = data.map(item => ({
+      id: item.inventory_id,
+      name: item.product_name,
+      // Added .trim() to handle any accidental spaces in DB
+      category: item.category ? item.category.toLowerCase().trim() : '', 
+      price: parseFloat(item.price) || 0,
+      sku: item.sku,
+      stock: parseInt(item.stock) || 0,
+      initials: item.initials
+    }));
+
+    console.log(`Successfully mapped ${inventoryData.length} items.`);
+
+  } catch (err) {
+    console.error('Error loading inventory:', err);
+    inventoryData = [];
+    if (list) {
+      list.innerHTML = `
+        <div class="empty-cart" style="color:#e74c3c;">
+          ⚠️ Error loading inventory<br>
+          <small>${err.message}</small>
+        </div>
+      `;
+    }
+  }
+}
 
 // ────────────────────────────────────────────────
 // PATIENT SEARCH MODAL (FIXED)
@@ -201,14 +245,17 @@ function renderInventory(category, search = '') {
   const list = document.getElementById('inventoryList');
   if (!list) return;
 
+  const searchTerm = search.toLowerCase().trim();
+  const targetCategory = category.toLowerCase().trim();
+
   const items = inventoryData.filter(i =>
-    i.category === category && i.name.toLowerCase().includes(search)
+    i.category === targetCategory && i.name.toLowerCase().includes(searchTerm)
   );
 
   list.innerHTML = '';
 
   if (!items.length) {
-    list.innerHTML = `<div class="empty-cart">No items found</div>`;
+    list.innerHTML = `<div class="empty-cart">No ${category} found</div>`;
     return;
   }
 
@@ -216,13 +263,24 @@ function renderInventory(category, search = '') {
     const el = document.createElement('div');
     el.className = 'inventory-item';
     el.dataset.id = item.id;
+    
+    const stockClass = item.stock <= 0 ? 'out-of-stock' : item.stock < 10 ? 'low-stock' : '';
+    const stockText = item.stock <= 0 ? 'Out of Stock' : `${item.stock} in stock`;
+    
     el.innerHTML = `
       <div>
         <div class="item-name">${item.name}</div>
-        <div class="item-category">${item.category}</div>
+        <div class="item-category">${item.category} • SKU: ${item.sku}</div>
+        <div class="item-stock ${stockClass}">${stockText}</div>
       </div>
-      <div class="item-price">₱${item.price.toFixed(2)}</div>
+      <div class="item-price">₱${item.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
     `;
+    
+    if (item.stock <= 0) {
+      el.style.opacity = '0.5';
+      el.style.cursor = 'not-allowed';
+    }
+    
     list.appendChild(el);
   });
 }
@@ -230,7 +288,17 @@ function renderInventory(category, search = '') {
 function setupInventoryClick() {
   document.addEventListener('click', e => {
     const item = e.target.closest('.inventory-item');
-    if (item) addToSale(+item.dataset.id);
+    if (!item) return;
+    
+    const id = +item.dataset.id;
+    const inventoryItem = inventoryData.find(i => i.id === id);
+    
+    // Check stock before adding
+    if (inventoryItem && inventoryItem.stock > 0) {
+      addToSale(id);
+    } else {
+      alert('This item is out of stock');
+    }
   });
 }
 
@@ -242,7 +310,17 @@ function addToSale(id) {
   if (!item) return;
 
   const existing = saleItems.find(i => i.id === id);
-  existing ? existing.quantity++ : saleItems.push({ ...item, quantity: 1 });
+  
+  if (existing) {
+    // Check if we have enough stock
+    if (existing.quantity >= item.stock) {
+      alert(`Only ${item.stock} units available in stock`);
+      return;
+    }
+    existing.quantity++;
+  } else {
+    saleItems.push({ ...item, quantity: 1 });
+  }
 
   renderSaleItems();
   updateTotal();
@@ -284,8 +362,19 @@ function renderSaleItems() {
 function changeQuantity(id, d) {
   const item = saleItems.find(i => i.id == id);
   if (!item) return;
-  item.quantity += d;
+  
+  const inventoryItem = inventoryData.find(i => i.id == id);
+  const newQty = item.quantity + d;
+  
+  // Check stock limit when increasing
+  if (d > 0 && inventoryItem && newQty > inventoryItem.stock) {
+    alert(`Only ${inventoryItem.stock} units available in stock`);
+    return;
+  }
+  
+  item.quantity = newQty;
   if (item.quantity <= 0) removeItem(id);
+  
   renderSaleItems();
   updateTotal();
 }
@@ -353,4 +442,10 @@ function completeSale() {
   document.getElementById('paymentModal').style.display = 'none';
   renderSaleItems();
   updateTotal();
+  
+  // Refresh inventory to get updated stock
+  loadInventoryFromDB().then(() => {
+    const cat = document.querySelector('.category-btn.active')?.dataset.category || 'frames';
+    renderInventory(cat);
+  });
 }
