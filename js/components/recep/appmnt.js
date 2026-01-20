@@ -46,8 +46,8 @@ function initializeAppointment() {
           const term = searchTerm.toLowerCase();
           filteredData = data.filter(appt =>
             appt.patient_name.toLowerCase().includes(term) ||
-            appt.date.includes(term) ||
-            appt.time.toLowerCase().includes(term) ||
+            appt.appointment_date.includes(term) ||
+            appt.appointment_time.toLowerCase().includes(term) ||
             appt.service.toLowerCase().includes(term)
           );
         }
@@ -64,13 +64,13 @@ function initializeAppointment() {
 
         // Render appointments
         tbody.innerHTML = filteredData.map(appt => `
-          <tr data-appointment-id="${appt.id}">
+          <tr data-appointment-id="${appt.appointment_id}">
             <td>${appt.patient_name}</td>
-            <td>${formatDate(appt.date)}</td>
-            <td>${formatTime(appt.time)}</td>
+            <td>${formatDate(appt.appointment_date)}</td>
+            <td>${formatTime(appt.appointment_time)}</td>
             <td>${appt.service}</td>
             <td>
-              <button class="action-btn" onclick="openAppointmentActionModal(event, '${appt.id}')">
+              <button class="action-btn" onclick="openAppointmentActionModal(event, '${appt.appointment_id}')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
                   <circle cx="12" cy="5" r="1" fill="currentColor"></circle>
@@ -204,7 +204,7 @@ function initializeAppointment() {
             ${data.map(appt => `
               <div style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
                 <div style="font-weight: 500;">${appt.patient_name}</div>
-                <div style="font-size: 12px; color: #666;">${formatTime(appt.time)} - ${appt.service}</div>
+                <div style="font-size: 12px; color: #666;">${formatTime(appt.appointment_time)} - ${appt.service}</div>
               </div>
             `).join('')}
           </div>`;

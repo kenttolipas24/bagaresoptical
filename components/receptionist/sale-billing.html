@@ -12,6 +12,7 @@
             autocomplete="off"
             required
           >
+          <input type="hidden" id="patientId">
         </div>
 
         <div class="date-group">
@@ -61,36 +62,35 @@
     </div>
   </div>
 
-  <!-- Patient Selection Modal - FIXED -->
-  <div id="patientSearchModal" class="modal-overlay">
-    <div class="modal-dialog patient-modal">
-      <div class="modal-header">
+  <!-- Sales Patient Selection Modal - MOVED INSIDE -->
+  <div id="salesPatientModal" class="sales-modal-overlay">
+    <div class="sales-modal-dialog">
+      <div class="sales-modal-header">
         <h3>Select Patient</h3>
-        <button class="close-btn" id="closePatientModal">×</button>
+        <button class="sales-close-btn" id="closePatientModal">×</button>
       </div>
 
-      <div class="modal-body">
+      <div class="sales-modal-body">
         <input 
           type="text" 
-          id="modalPatientSearch" 
-          class="modal-search-input" 
-          placeholder="Continue typing to filter..." 
+          id="salesPatientSearch"
+          class="sales-modal-search"
+          placeholder="Continue typing to filter..."
           autocomplete="off"
         >
 
-        <div class="patient-list" id="patientListContainer">
-          <!-- Results go here -->
+        <div class="patient-list" id="salesPatientList">
+          <!-- Patient cards will be inserted here -->
         </div>
       </div>
 
-      <div class="modal-footer">
+      <div class="sales-modal-footer">
         <button class="btn secondary" id="btnCancelPatient">Cancel</button>
-        <button class="btn primary" id="btnManualEntry">Use Typed Name</button>
       </div>
     </div>
   </div>
 
-  <!-- Payment Modal (your original, unchanged) -->
+  <!-- Payment Modal -->
   <div id="paymentModal" class="modal">
     <div class="modal-content">
       <div class="modal-head">

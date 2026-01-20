@@ -1,10 +1,12 @@
 <?php
-// api/get_appointments.php
-error_reporting(0);
-ini_set('display_errors', 0);
+// ==============================================
+// get_appointments.php
+// Fetch confirmed appointments from appointment table
+// ==============================================
 
 header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
+error_reporting(0);
+ini_set('display_errors', 0);
 
 try {
     $conn = new mysqli("localhost", "root", "", "bagares_system");
@@ -12,89 +14,72 @@ try {
     if ($conn->connect_error) {
         throw new Exception("Database connection failed");
     }
-
+    
+    $conn->set_charset("utf8mb4");
+    
     // Check if filtering by specific date
     $dateFilter = isset($_GET['date']) ? $_GET['date'] : null;
     
+    // Query appointments with patient names
+    $sql = "SELECT 
+                a.appointment_id,
+                a.patient_id,
+                a.appointment_date,
+                a.appointment_time,
+                a.service,
+                a.status,
+                a.created_at,
+                CONCAT(p.firstname, ' ', 
+                       COALESCE(p.middlename, ''), ' ', 
+                       p.lastname, ' ', 
+                       COALESCE(p.suffix, '')) as patient_name
+            FROM appointment a
+            JOIN patient p ON a.patient_id = p.patient_id
+            WHERE a.status = 'scheduled'";
+    
+    // Add date filter if provided
     if ($dateFilter) {
-        // Get appointments for specific date (only confirmed status)
-        $sql = "
-            SELECT 
-                id,
-                CONCAT(
-                    firstname, ' ', 
-                    COALESCE(CONCAT(middlename, ' '), ''), 
-                    lastname,
-                    COALESCE(CONCAT(' ', suffix), '')
-                ) as patient_name,
-                appointment_date as date,
-                appointment_time as time,
-                service,
-                status
-            FROM patient_request
-            WHERE appointment_date = ? 
-            AND status = 'confirmed'
-            ORDER BY appointment_time ASC
-        ";
+        $sql .= " AND a.appointment_date = ?";
+    }
+    
+    $sql .= " ORDER BY a.appointment_date DESC, a.appointment_time DESC";
+    
+    if ($dateFilter) {
         $stmt = $conn->prepare($sql);
-        
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
-        }
-        
         $stmt->bind_param("s", $dateFilter);
+        $stmt->execute();
+        $result = $stmt->get_result();
     } else {
-        // Get all confirmed appointments
-        $sql = "
-            SELECT 
-                id,
-                CONCAT(
-                    firstname, ' ', 
-                    COALESCE(CONCAT(middlename, ' '), ''), 
-                    lastname,
-                    COALESCE(CONCAT(' ', suffix), '')
-                ) as patient_name,
-                appointment_date as date,
-                appointment_time as time,
-                service,
-                status
-            FROM patient_request
-            WHERE status = 'confirmed'
-            ORDER BY appointment_date DESC, appointment_time ASC
-        ";
-        $stmt = $conn->prepare($sql);
-        
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
-        }
+        $result = $conn->query($sql);
     }
     
-    if (!$stmt->execute()) {
-        throw new Exception("Execute failed: " . $stmt->error);
+    if (!$result) {
+        throw new Exception("Query failed: " . $conn->error);
     }
-    
-    $result = $stmt->get_result();
     
     $appointments = [];
     while ($row = $result->fetch_assoc()) {
-        // Clean up extra spaces in patient name
-        $row['patient_name'] = preg_replace('/\s+/', ' ', trim($row['patient_name']));
-        $appointments[] = $row;
+        $appointments[] = [
+            'appointment_id' => $row['appointment_id'],
+            'patient_id' => $row['patient_id'],
+            'patient_name' => trim($row['patient_name']),
+            'appointment_date' => $row['appointment_date'],
+            'appointment_time' => $row['appointment_time'],
+            'service' => $row['service'],
+            'status' => $row['status'],
+            'created_at' => $row['created_at']
+        ];
     }
     
-    $stmt->close();
-    $conn->close();
-    
-    // Always return a valid JSON array
     echo json_encode($appointments);
+    
+    if (isset($stmt)) $stmt->close();
+    $conn->close();
     
 } catch (Exception $e) {
     http_response_code(500);
-    // Return valid JSON with error info
     echo json_encode([
-        'error' => true,
-        'message' => $e->getMessage(),
-        'appointments' => []
+        "error" => $e->getMessage()
     ]);
 }
 ?>

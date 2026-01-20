@@ -57,14 +57,15 @@ window.updatePatientTable = async function () {
         tbody.innerHTML = '';
 
         records.forEach(r => {
+            // Build full name from patient data
             const fullName = `${r.firstname} ${r.middlename || ''} ${r.lastname} ${r.suffix || ''}`.trim();
             const age = calculateAge(r.birthdate);
 
             // Updated Minimalist Prescription UI
             const prescriptionHTML = `
                 <div class="prescription-container">
-                    <div><span class="prescription-label">OD</span> ${r.od_sph} / ${r.od_cyl} <small>x</small>${r.od_axis}</div>
-                    <div><span class="prescription-label">OS</span> ${r.os_sph} / ${r.os_cyl} <small>x</small>${r.os_axis}</div>
+                    <div><span class="prescription-label">OD</span> ${r.od_sph || '—'} / ${r.od_cyl || '—'} <small>x</small>${r.od_axis || '—'}</div>
+                    <div><span class="prescription-label">OS</span> ${r.os_sph || '—'} / ${r.os_cyl || '—'} <small>x</small>${r.os_axis || '—'}</div>
                 </div>
             `;
 
@@ -72,14 +73,14 @@ window.updatePatientTable = async function () {
             row.innerHTML = `
                 <td>
                     <div style="font-weight: 600; color: #1a202c;">${fullName}</div>
-                    <div style="font-size: 0.75rem; color: #a0aec0;">ID: #${r.request_id}</div>
+                    <div style="font-size: 0.75rem; color: #a0aec0;">ID: #${r.patient_id}</div>
                 </td>
                 <td style="color: #718096; max-width: 200px;">${r.address || '—'}</td>
                 <td>${age} <span style="font-size: 0.7rem; color: #cbd5e0;">YRS</span></td>
                 <td>${prescriptionHTML}</td>
                 <td style="color: #718096; font-size: 0.8rem;">${formatDate(r.exam_date)}</td>
                 <td>
-                    <button class="action-btn" onclick="toggleActionDropdown(event, ${r.request_id})">
+                    <button class="action-btn" onclick="toggleActionDropdown(event, ${r.patient_id})">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                     </button>
                 </td>

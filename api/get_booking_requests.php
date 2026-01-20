@@ -1,5 +1,7 @@
 <?php
-// ../../api/get_booking_requests.php
+// ==============================================
+// get_booking_request.php
+// ==============================================
 
 header("Content-Type: application/json");
 
@@ -15,31 +17,32 @@ if ($conn->connect_error) {
     exit;
 }
 
-// Get only PENDING requests by default (THIS IS THE KEY CHANGE)
+// Get only PENDING requests by default
 $status = isset($_GET['status']) ? trim($_GET['status']) : 'pending';
 
 $sql = "SELECT 
-            id,
-            service,
-            appointment_date,
-            appointment_time,
-            firstname,
-            middlename,
-            lastname,
-            suffix,
-            address,
-            birthdate,
-            email,
-            status,
-            created_at
-        FROM patient_request";
+            pr.id,
+            pr.service,
+            pr.appointment_date,
+            pr.appointment_time,
+            pr.status,
+            pr.created_at,
+            p.firstname,
+            p.middlename,
+            p.lastname,
+            p.suffix,
+            p.address,
+            p.birthdate,
+            p.email
+        FROM patient_request pr
+        JOIN patient p ON pr.patient_id = p.patient_id";
 
 // Always filter by status (show pending by default, or specific status if requested)
 if ($status !== 'all') {
-    $sql .= " WHERE status = ?";
+    $sql .= " WHERE pr.status = ?";
 }
 
-$sql .= " ORDER BY created_at DESC";
+$sql .= " ORDER BY pr.created_at DESC";
 
 if ($status !== 'all') {
     $stmt = $conn->prepare($sql);
@@ -64,7 +67,7 @@ if (!$result) {
 $requests = [];
 while ($row = $result->fetch_assoc()) {
     $requests[] = [
-        'id'           => $row['id'],                          // Keep as string or int (both work)
+        'id'           => $row['id'],
         'firstname'    => $row['firstname'] ?? '',
         'middlename'   => $row['middlename'] ?? '',
         'lastname'     => $row['lastname'] ?? '',
@@ -73,8 +76,8 @@ while ($row = $result->fetch_assoc()) {
         'birthdate'    => $row['birthdate'] ?? '',
         'email'        => $row['email'] ?? '',
         'service'      => $row['service'] ?? '',
-        'date'         => $row['appointment_date'],            // Matches JS expectation
-        'time'         => $row['appointment_time'],            // Matches JS expectation
+        'date'         => $row['appointment_date'],
+        'time'         => $row['appointment_time'],
         'status'       => $row['status'] ?? 'pending',
         'created_at'   => $row['created_at']
     ];
