@@ -22,9 +22,6 @@ function initializePatientRecords() {
   // 🔹 INITIAL LOAD
   fetchPatientRecords();
 
-  // 🔹 AUTO REFRESH DATA EVERY 5 SECONDS
-  setInterval(fetchPatientRecords, 5000);
-
   // =====================
   // FETCH FROM DATABASE
   // =====================
@@ -32,11 +29,18 @@ function initializePatientRecords() {
     fetch('../api/get_patient_records.php')
       .then(res => res.json())
       .then(data => {
+        console.log('✅ Patient records loaded:', data);
         patients = data;
         renderTable();
       })
       .catch(err => {
-        console.error('Failed to fetch patient records:', err);
+        console.error('❌ Failed to fetch patient records:', err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align:center;color:#ef4444;padding:20px">
+              Error loading patient records. Please refresh.
+            </td>
+          </tr>`;
       });
   }
 
@@ -52,18 +56,23 @@ function initializePatientRecords() {
       cell.colSpan = 7;
       cell.textContent = 'No patient records found.';
       cell.style.textAlign = 'center';
+      cell.style.padding = '20px';
+      cell.style.color = '#999';
       return;
     }
 
     patients.forEach(p => {
       const row = tbody.insertRow();
 
-      row.insertCell(0).textContent = p.patient_name;
-      row.insertCell(1).textContent = p.exam_date;
-      row.insertCell(2).textContent = `${p.od_sph} / ${p.od_cyl} / ${p.od_axis}`;
-      row.insertCell(3).textContent = `${p.os_sph} / ${p.os_cyl} / ${p.os_axis}`;
-      row.insertCell(4).textContent = p.od_add ?? '-';
-      row.insertCell(5).textContent = p.pd ?? '-';
+      // Build patient name
+      const fullName = `${p.firstname} ${p.middlename || ''} ${p.lastname} ${p.suffix || ''}`.trim();
+
+      row.insertCell(0).textContent = fullName;
+      row.insertCell(1).textContent = p.exam_date || 'N/A';
+      row.insertCell(2).textContent = `${p.od_sph || '—'} / ${p.od_cyl || '—'} / ${p.od_axis || '—'}`;
+      row.insertCell(3).textContent = `${p.os_sph || '—'} / ${p.os_cyl || '—'} / ${p.os_axis || '—'}`;
+      row.insertCell(4).textContent = p.od_add || '-';
+      row.insertCell(5).textContent = p.pd || '-';
 
       const actionCell = row.insertCell(6);
       actionCell.innerHTML = '<button class="actions-btn">⋯</button>';

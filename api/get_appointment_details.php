@@ -1,16 +1,19 @@
 <?php
+// ==============================================
 // api/get_appointment_details.php
+// Get appointment details with patient info
+// ==============================================
+
 error_reporting(0);
 ini_set('display_errors', 0);
 
 header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
 
 try {
     $conn = new mysqli("localhost", "root", "", "bagares_system");
     
     if ($conn->connect_error) {
-        throw new Exception("Database connection failed: " . $conn->connect_error);
+        throw new Exception("Database connection failed");
     }
 
     $appointmentId = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -19,29 +22,32 @@ try {
         throw new Exception('Appointment ID is required');
     }
 
-    // Get appointment and patient details BY ID
+    // Get appointment and patient details by joining tables
     $stmt = $conn->prepare("
         SELECT 
-            id,
+            a.appointment_id,
+            a.patient_id,
+            a.appointment_date,
+            a.appointment_time,
+            a.service,
+            a.status,
             CONCAT(
-                firstname, ' ', 
-                COALESCE(CONCAT(middlename, ' '), ''), 
-                lastname,
-                COALESCE(CONCAT(' ', suffix), '')
+                p.firstname, ' ', 
+                COALESCE(CONCAT(p.middlename, ' '), ''), 
+                p.lastname,
+                COALESCE(CONCAT(' ', p.suffix), '')
             ) as patient_name,
-            firstname,
-            middlename,
-            lastname,
-            suffix,
-            email,
-            birthdate,
-            address,
-            appointment_date,
-            appointment_time,
-            service,
-            status
-        FROM patient_request
-        WHERE id = ?
+            p.firstname,
+            p.middlename,
+            p.lastname,
+            p.suffix,
+            p.email,
+            p.birthdate,
+            p.address,
+            p.phone
+        FROM appointment a
+        JOIN patient p ON a.patient_id = p.patient_id
+        WHERE a.appointment_id = ?
     ");
     
     if (!$stmt) {
@@ -70,7 +76,24 @@ try {
     } else {
         $appointment['age'] = null;
     }
+
+    // Check if there's existing exam data for this patient
+    $examStmt = $conn->prepare("
+        SELECT * FROM eye_examinations 
+        WHERE patient_id = ? 
+        ORDER BY exam_date DESC 
+        LIMIT 1
+    ");
     
+    $examStmt->bind_param("i", $appointment['patient_id']);
+    $examStmt->execute();
+    $examResult = $examStmt->get_result();
+    
+    if ($examResult->num_rows > 0) {
+        $appointment['exam_data'] = $examResult->fetch_assoc();
+    }
+    
+    $examStmt->close();
     $stmt->close();
     $conn->close();
     

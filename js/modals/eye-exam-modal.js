@@ -21,58 +21,60 @@ window.openEyeExamModal = function(appointmentId) {
     return;
   }
 
-  console.log('Fetching details for appointment ID:', appointmentId);
+  console.log('🔍 Opening eye exam for appointment ID:', appointmentId);
+
+  // Show modal FIRST
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
 
   // Fetch appointment details
   fetch(`../api/get_appointment_details.php?id=${appointmentId}`)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      return res.json();
+    })
     .then(data => {
       if (data.error) {
         throw new Error(data.message);
       }
       
-      console.log('full patient data:', data);
-      console.log('Patient name:', data.patient_name);
+      console.log('✅ Patient data received:', data);
       
-      // Show modal first
-      modal.classList.add('active');
-      document.body.style.overflow = 'hidden';
-      
-      // Use setTimeout to ensure fields are rendered before populating
-      setTimeout(() => {
-  // Populate patient information (read-only display)
-  const nameEl = document.getElementById('patientName');
-  const ageEl = document.getElementById('patientAge');
-  const birthdateEl = document.getElementById('patientBirthdate');
-  const emailEl = document.getElementById('patientEmail');
-  const addressEl = document.getElementById('patientAddress');
-  
-  if (nameEl) nameEl.textContent = data.patient_name || '-';
-  if (ageEl) ageEl.textContent = data.age ? data.age + ' years old' : '-';
-  if (birthdateEl) birthdateEl.textContent = data.birthdate || '-';
-  if (emailEl) emailEl.textContent = data.email || '-';
-  if (addressEl) addressEl.textContent = data.address || '-';
+      // Populate patient information with error checking
+      const setTextContent = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.textContent = value || '-';
+          console.log(`✅ Set ${id}:`, value || '-');
+        } else {
+          console.error(`❌ Element not found: ${id}`);
+        }
+      };
 
-  // Set today's date as default for exam date
-  const dateInput = document.getElementById('examDate');
-  if (dateInput) {
-    const today = new Date().toISOString().split('T')[0];
-    dateInput.value = today;
-  }
+      setTextContent('patientName', data.patient_name);
+      setTextContent('patientAge', data.age ? `${data.age} years old` : '-');
+      setTextContent('patientBirthdate', data.birthdate);
+      setTextContent('patientEmail', data.email);
+      setTextContent('patientAddress', data.address);
 
-  // Check if there's existing exam data
-  if (data.exam_data) {
-    populateExamData(data.exam_data);
-  }
-}, 100); // 100ms delay to ensure DOM is ready
+      // Set today's date as default for exam date
+      const dateInput = document.getElementById('examDate');
+      if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+      }
+
+      // Check if there's existing exam data
+      if (data.exam_data) {
+        console.log('📋 Found existing exam data, populating...');
+        populateExamData(data.exam_data);
+      }
     })
     .catch(error => {
-      console.error('Error loading appointment details:', error);
+      console.error('❌ Error loading appointment details:', error);
       alert('Error loading patient information: ' + error.message);
-      
-      // Show modal even on error
-      modal.classList.add('active');
-      document.body.style.overflow = 'hidden';
     });
 }
 
