@@ -1,63 +1,76 @@
+// ================================================
+//  PATIENT MODAL (patient-modal.js)
+// ================================================
+
 // Load the patient modal HTML first
 fetch('../components/modals/patient-modal.html')
   .then(res => res.text())
   .then(data => {
     document.getElementById('patient-modals-placeholder').innerHTML = data;
     
-    // Initialize modal functionality after HTML is loaded
     initializePatientModal();
   })
   .catch(error => {
     console.error('Error loading patient modal:', error);
   });
 
+
+// ────────────────────────────────────────────────
+// initialize Patient Modal
+// ────────────────────────────────────────────────
 function initializePatientModal() {
-  // Handle form submission
-  const patientForm = document.getElementById('patientForm');
+  const patientForm = document.getElementById('patientRecordForm');
   if (patientForm) {
     patientForm.addEventListener('submit', function(e) {
       e.preventDefault();
       
       const patientData = {
-        id: Date.now(), // Generate unique ID
-        firstName: document.getElementById('firstName').value,
-        middleInitial: document.getElementById('middleInitial').value,
-        lastName: document.getElementById('lastName').value,
-        email: document.getElementById('email').value,
-        age: document.getElementById('age').value,
-        dateOfBirth: document.getElementById('dateOfBirth').value,
-        address: document.getElementById('address').value,
-        sex: document.getElementById('sex').value,
-        contactNumber: document.getElementById('contactNumber').value,
-        lastVisit: new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-'),
-        prescription: 'No prescription yet',
-        status: 'Active'
+        firstname: document.getElementById('patientFirstName').value,
+        middlename: document.getElementById('patientMiddleInitial').value,
+        lastname: document.getElementById('patientLastName').value,
+        suffix: document.getElementById('patientSuffix').value,
+        email: document.getElementById('patientEmail').value,
+        birthdate: document.getElementById('patientDateOfBirth').value,
+        address: document.getElementById('patientAddress').value,
+        phone: document.getElementById('patientContactNumber').value
       };
 
-      console.log('Patient Data:', patientData);
+      console.log('📤 Sending patient data:', patientData);
       
-      // Get existing patients from localStorage
-      let patients = JSON.parse(localStorage.getItem('patients')) || [];
-      
-      // Add new patient
-      patients.push(patientData);
-      
-      // Save back to localStorage
-      localStorage.setItem('patients', JSON.stringify(patients));
-      
-      // Update the table if the function exists
-      if (typeof window.updatePatientTable === 'function') {
-        window.updatePatientTable();
-      }
-      
-      // Close modal
-      closePatientModal();
+      // Send to API
+      fetch('../api/add_patient.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patientData)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert('Patient added successfully!');
+          console.log('✅ Patient added with ID:', data.patient_id);
+          
+          // Update the table if the function exists
+          if (typeof window.updatePatientTable === 'function') {
+            window.updatePatientTable();
+          }
+          
+          // Close modal
+          closePatientModal();
+        } else {
+          alert('Error adding patient: ' + (data.error || 'Unknown error'));
+          console.error('❌ Error:', data.error);
+        }
+      })
+      .catch(error => {
+        console.error('❌ Network error:', error);
+        alert('Failed to add patient. Please try again.');
+      });
     });
   }
 
   // Close modal when clicking overlay
   document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal-overlay')) {
+    if (e.target.classList.contains('patient-modal-overlay')) {
       closePatientModal();
     }
   });
@@ -65,7 +78,7 @@ function initializePatientModal() {
   // Keyboard shortcuts
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-      const modal = document.getElementById('patientModal');
+      const modal = document.getElementById('patientRecordModal');
       if (modal && modal.classList.contains('active')) {
         closePatientModal();
       }
@@ -73,18 +86,20 @@ function initializePatientModal() {
   });
 }
 
-// Patient Modal Functions (Make them global so they can be called from anywhere)
+// ────────────────────────────────────────────────
+// Patient Modal Functions
+// ────────────────────────────────────────────────
 window.openPatientModal = function(mode = 'add', patientData = null) {
-  const modal = document.getElementById('patientModal');
+  const modal = document.getElementById('patientRecordModal');
   
   if (!modal) {
     console.error('Patient modal not found!');
     return;
   }
 
-  const modalTitle = document.getElementById('modalTitle');
-  const form = document.getElementById('patientForm');
-  const submitBtn = form.querySelector('.btn-submit');
+  const modalTitle = document.getElementById('patientModalTitle');
+  const form = document.getElementById('patientRecordForm');
+  const submitBtn = form.querySelector('.patient-btn-submit');
 
   if (mode === 'edit' && patientData) {
     modalTitle.textContent = 'Edit Patient';
@@ -94,15 +109,14 @@ window.openPatientModal = function(mode = 'add', patientData = null) {
     form.dataset.patientId = patientData.id;
     
     // Fill form with patient data
-    document.getElementById('firstName').value = patientData.firstName || '';
-    document.getElementById('middleInitial').value = patientData.middleInitial || '';
-    document.getElementById('lastName').value = patientData.lastName || '';
-    document.getElementById('email').value = patientData.email || '';
-    document.getElementById('age').value = patientData.age || '';
-    document.getElementById('dateOfBirth').value = patientData.dateOfBirth || '';
-    document.getElementById('address').value = patientData.address || '';
-    document.getElementById('sex').value = patientData.sex || '';
-    document.getElementById('contactNumber').value = patientData.contactNumber || '';
+    document.getElementById('patientFirstName').value = patientData.firstName || '';
+    document.getElementById('patientMiddleInitial').value = patientData.middleInitial || '';
+    document.getElementById('patientLastName').value = patientData.lastName || '';
+    document.getElementById('patientSuffix').value = patientData.suffix || '';
+    document.getElementById('patientEmail').value = patientData.email || '';
+    document.getElementById('patientDateOfBirth').value = patientData.dateOfBirth || '';
+    document.getElementById('patientAddress').value = patientData.address || '';
+    document.getElementById('patientContactNumber').value = patientData.contactNumber || '';
   } else {
     modalTitle.textContent = 'Add Patient';
     submitBtn.textContent = 'Add Patient';
@@ -115,7 +129,7 @@ window.openPatientModal = function(mode = 'add', patientData = null) {
 }
 
 window.closePatientModal = function() {
-  const modal = document.getElementById('patientModal');
+  const modal = document.getElementById('patientRecordModal');
   if (modal) {
     modal.classList.remove('active');
     document.body.style.overflow = 'auto';

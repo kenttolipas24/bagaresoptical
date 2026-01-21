@@ -22,7 +22,7 @@ window.openViewDetails = function (itemId) {
 
     let product = null;
 
-    // ✅ FIND PRODUCT USING inventory_id FIRST
+    // FIND PRODUCT USING inventory_id
     if (window.inventoryData && Array.isArray(window.inventoryData)) {
         product = window.inventoryData.find(item => {
             return item.inventory_id == itemId ||
@@ -31,7 +31,7 @@ window.openViewDetails = function (itemId) {
         });
     }
 
-    // ❌ DO NOT FALL BACK TO TABLE ROW (it loses inventory_id)
+    // DO NOT FALL BACK TO TABLE ROW (it loses inventory_id)
     if (!product) {
         console.error('Product not found in inventoryData:', itemId);
         alert('Product not found. Please refresh the page.');
@@ -43,15 +43,35 @@ window.openViewDetails = function (itemId) {
     // Save current product
     currentViewingProduct = product;
 
-    // Populate modal
-    populateViewDetailsModal(product);
-
-    // Show modal
-    const modal = document.getElementById('viewDetailsModal');
-    if (modal) {
-        modal.classList.add('show');
-        document.body.style.overflow = 'hidden';
-    }
+    // REFRESH: Fetch latest data before showing
+    fetch(`../api/get_inventory.php`)
+        .then(res => res.json())
+        .then(data => {
+            const latest = data.find(i => i.inventory_id == product.inventory_id);
+            if (latest) {
+                product.stock = latest.stock; // Update stock count
+            }
+            
+            // Populate modal with fresh data
+            populateViewDetailsModal(product);
+            
+            // Show modal
+            const modal = document.getElementById('viewDetailsModal');
+            if (modal) {
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        })
+        .catch(err => {
+            console.error('Error refreshing data:', err);
+            // Still show modal with existing data
+            populateViewDetailsModal(product);
+            const modal = document.getElementById('viewDetailsModal');
+            if (modal) {
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        });
 };
 
 
@@ -74,7 +94,6 @@ function extractProductFromRow(row) {
 
 // Populate modal with product data
 function populateViewDetailsModal(product) {
-    // Product initials/image
     const initials = product.initials || product.product_name?.substring(0, 2).toUpperCase() || '??';
     const initialsElement = document.getElementById('viewProductInitials');
     if (initialsElement) {
@@ -145,7 +164,10 @@ function populateViewDetailsModal(product) {
     populateStockHistory(product);
 }
 
+
+// ────────────────────────────────────────────────
 // Populate stock movement history table
+// ────────────────────────────────────────────────
 function populateStockHistory(product) {
     const historyBody = document.getElementById('stockHistoryBody');
     if (!historyBody) return;
@@ -228,7 +250,7 @@ window.closeViewDetailsModal = function() {
 window.editProductFromView = function() {
     if (currentViewingProduct) {
         closeViewDetailsModal();
-        // Open edit modal with product data
+
         console.log('Edit product:', currentViewingProduct);
         alert('Edit functionality - integrate with your add-item-modal.js');
     }

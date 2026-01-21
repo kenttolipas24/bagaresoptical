@@ -5,8 +5,8 @@
 // ==============================================
 
 header('Content-Type: application/json');
-error_reporting(0);
-ini_set('display_errors', 0);
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 try {
     $conn = new mysqli("localhost", "root", "", "bagares_system");
@@ -42,39 +42,63 @@ try {
     $patient_id = $row['patient_id'];
     $stmt->close();
 
-    // Insert eye examination
+    // 🔥 FIX: Set request_id to NULL since there's no direct link
+    $request_id = null;
+
+    // Insert eye examination with NULL request_id
     $insertStmt = $conn->prepare("
         INSERT INTO eye_examinations (
             patient_id,
             appointment_id,
+            request_id,
             exam_date,
-            od_sph, od_cyl, od_axis, od_add,
-            os_sph, os_cyl, os_axis, os_add,
+            od_sph,
+            od_cyl,
+            od_axis,
+            od_add,
+            os_sph,
+            os_cyl,
+            os_axis,
+            os_add,
             pd,
             lens_type,
             lens_material,
-            exam_notes,
             created_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
     ");
 
+    // Convert values to proper types
+    $od_sph = $data['od_sph'] !== '' ? floatval($data['od_sph']) : 0;
+    $od_cyl = $data['od_cyl'] !== '' ? floatval($data['od_cyl']) : 0;
+    $od_axis = $data['od_axis'] !== '' ? intval($data['od_axis']) : 0;
+    $od_add = $data['od_add'] !== '' ? floatval($data['od_add']) : 0;
+    
+    $os_sph = $data['os_sph'] !== '' ? floatval($data['os_sph']) : 0;
+    $os_cyl = $data['os_cyl'] !== '' ? floatval($data['os_cyl']) : 0;
+    $os_axis = $data['os_axis'] !== '' ? intval($data['os_axis']) : 0;
+    $os_add = $data['os_add'] !== '' ? floatval($data['os_add']) : 0;
+    
+    $pd = $data['pd'] !== '' ? intval($data['pd']) : 0;
+
+    // 15 parameters: 3 ints (patient_id, appointment_id, request_id=NULL), 
+    // 1 string (exam_date), 8 decimals, 3 ints, 2 strings
     $insertStmt->bind_param(
-        "iisddiddiddiss",
+        "iiisddiddiddiss",
         $patient_id,
         $appointment_id,
+        $request_id,
         $exam_date,
-        $data['od_sph'],
-        $data['od_cyl'],
-        $data['od_axis'],
-        $data['od_add'],
-        $data['os_sph'],
-        $data['os_cyl'],
-        $data['os_axis'],
-        $data['os_add'],
-        $data['pd'],
+        $od_sph,
+        $od_cyl,
+        $od_axis,
+        $od_add,
+        $os_sph,
+        $os_cyl,
+        $os_axis,
+        $os_add,
+        $pd,
         $data['lens_type'],
-        $data['lens_material'],
-        $data['notes']
+        $data['lens_material']
     );
 
     if (!$insertStmt->execute()) {

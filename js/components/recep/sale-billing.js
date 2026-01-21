@@ -1,7 +1,5 @@
 // ================================================
-// SALES & BILLING - REAL DATA VERSION
-// Fetches inventory from database
-// January 2026
+// SALES & BILLING (sale-billing.js)
 // ================================================
 
 // ────────────────────────────────────────────────
@@ -10,7 +8,7 @@
 let saleItems = [];
 let selectedPaymentMethod = null;
 let salesInitialized = false;
-let inventoryData = []; // Will be populated from database
+let inventoryData = [];
 
 // ────────────────────────────────────────────────
 // LOAD HTML COMPONENT ONLY (NO INIT HERE)
@@ -261,11 +259,14 @@ function setupHeaderFields() {
 
 function validateHeaderFields() {
   const patientName = document.getElementById('patientName').value;
-  if (!patientName) {
-    alert('Please select a patient from the list');
-    return false;
+  const patientId = document.getElementById('patientId').value;
+  
+  // Allow sales without patient (walk-in customers)
+  if (patientName && !patientId) {
+    return confirm('This patient is not in our system. Continue as walk-in customer?');
   }
-  return true;
+  
+  return true; // Always allow the sale to proceed
 }
 
 // ────────────────────────────────────────────────
@@ -485,16 +486,13 @@ function setupPaymentModal() {
 }
 
 function completeSale() {
-  const patientId = document.getElementById('patientId').value;
+  const patientId = document.getElementById('patientId').value || null; // Allow null
+  const patientName = document.getElementById('patientName').value || 'Walk-in Customer';
   const saleDate = document.getElementById('saleDate').value;
 
-  if (!patientId) {
-    alert('Please select a patient');
-    return;
-  }
-
   const payload = {
-    patient_id: patientId,  // ← CHANGED from patient_request_id
+    patient_id: patientId, // Can be null for walk-in
+    patient_name: patientName, // Include name for reference
     sale_date: saleDate,
     payment_method: selectedPaymentMethod,
     total_amount: saleItems.reduce((s, i) => s + i.price * i.quantity, 0),
