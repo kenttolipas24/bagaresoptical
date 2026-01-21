@@ -23,20 +23,25 @@ if (!$data) {
 }
 
 // Extract patient data
-$firstname = $data['firstname'] ?? '';
-$middlename = $data['middlename'] ?? '';
-$lastname = $data['lastname'] ?? '';
-$suffix = $data['suffix'] ?? '';
-$email = $data['email'] ?? '';
+$firstname = trim($data['firstname'] ?? '');
+$middlename = trim($data['middlename'] ?? '');
+$lastname = trim($data['lastname'] ?? '');
+$suffix = trim($data['suffix'] ?? '');
+$email = trim($data['email'] ?? '');
 $birthdate = $data['birthdate'] ?? '';
-$address = $data['address'] ?? '';
-$phone = $data['phone'] ?? '';
+$address = trim($data['address'] ?? '');
+$phone = trim($data['phone'] ?? '');
 
-// Validate required fields
-if (empty($firstname) || empty($lastname) || empty($email) || empty($birthdate)) {
+// Validate required fields (only firstname, lastname, and birthdate are required)
+if (empty($firstname) || empty($lastname) || empty($birthdate)) {
+    $missing = [];
+    if (empty($firstname)) $missing[] = 'firstname';
+    if (empty($lastname)) $missing[] = 'lastname';
+    if (empty($birthdate)) $missing[] = 'birthdate';
+    
     echo json_encode([
         "success" => false,
-        "error" => "Missing required fields"
+        "error" => "Missing required fields: " . implode(', ', $missing)
     ]);
     exit;
 }

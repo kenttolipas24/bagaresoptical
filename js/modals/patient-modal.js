@@ -1,38 +1,48 @@
-// ================================================
-//  PATIENT MODAL (patient-modal.js)
-// ================================================
-
 // Load the patient modal HTML first
 fetch('../components/modals/patient-modal.html')
   .then(res => res.text())
   .then(data => {
     document.getElementById('patient-modals-placeholder').innerHTML = data;
     
+    // Initialize modal functionality after HTML is loaded
     initializePatientModal();
   })
   .catch(error => {
     console.error('Error loading patient modal:', error);
   });
 
-
-// ────────────────────────────────────────────────
-// initialize Patient Modal
-// ────────────────────────────────────────────────
 function initializePatientModal() {
+  // Handle form submission
   const patientForm = document.getElementById('patientRecordForm');
   if (patientForm) {
     patientForm.addEventListener('submit', function(e) {
       e.preventDefault();
       
+      // Get form values with proper trimming
+      const firstname = document.getElementById('patientFirstName')?.value?.trim() || '';
+      const middlename = document.getElementById('patientMiddleInitial')?.value?.trim() || '';
+      const lastname = document.getElementById('patientLastName')?.value?.trim() || '';
+      const suffix = document.getElementById('patientSuffix')?.value?.trim() || '';
+      const email = document.getElementById('patientEmail')?.value?.trim() || '';
+      const birthdate = document.getElementById('patientDateOfBirth')?.value || '';
+      const address = document.getElementById('patientAddress')?.value?.trim() || '';
+      const phone = document.getElementById('patientContactNumber')?.value?.trim() || '';
+
+      // Validate required fields on client side
+      if (!firstname || !lastname || !birthdate) {
+        alert('Please fill in all required fields: First Name, Last Name, and Date of Birth');
+        return;
+      }
+
       const patientData = {
-        firstname: document.getElementById('patientFirstName').value,
-        middlename: document.getElementById('patientMiddleInitial').value,
-        lastname: document.getElementById('patientLastName').value,
-        suffix: document.getElementById('patientSuffix').value,
-        email: document.getElementById('patientEmail').value,
-        birthdate: document.getElementById('patientDateOfBirth').value,
-        address: document.getElementById('patientAddress').value,
-        phone: document.getElementById('patientContactNumber').value
+        firstname,
+        middlename,
+        lastname,
+        suffix,
+        email,
+        birthdate,
+        address,
+        phone
       };
 
       console.log('📤 Sending patient data:', patientData);
@@ -86,9 +96,7 @@ function initializePatientModal() {
   });
 }
 
-// ────────────────────────────────────────────────
-// Patient Modal Functions
-// ────────────────────────────────────────────────
+// Patient Modal Functions (Make them global so they can be called from anywhere)
 window.openPatientModal = function(mode = 'add', patientData = null) {
   const modal = document.getElementById('patientRecordModal');
   

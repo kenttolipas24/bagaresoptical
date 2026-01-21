@@ -37,13 +37,13 @@ fetch('../components/optometrists/navbar.html')
   .catch(error => console.error('Error loading navbar:', error));
 
 // Single function to switch pages
-// Single function to switch pages
 function changePage(pageId, event) {
   console.log('Switching to:', pageId);
 
   // Hide all placeholders
   document.getElementById('Cal&Det-placeholder').style.display = 'none';
   document.getElementById('patient-record-placeholder').style.display = 'none';
+  document.getElementById('eye-exam-results-placeholder').style.display = 'none';
   document.getElementById('reports-placeholder').style.display = 'none';
 
   // Show the correct one
@@ -51,8 +51,9 @@ function changePage(pageId, event) {
     document.getElementById('Cal&Det-placeholder').style.display = 'block';
   } else if (pageId === 'patient-record') {
     document.getElementById('patient-record-placeholder').style.display = 'block';
+  } else if (pageId === 'eye-exam-results') {
+    document.getElementById('eye-exam-results-placeholder').style.display = 'block';
   } else if (pageId === 'reports') {
     document.getElementById('reports-placeholder').style.display = 'block';
-    console.log('Reports section should be visible now'); // ADD THIS LINE
   }
 }
