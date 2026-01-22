@@ -110,60 +110,61 @@ async function loadInventoryFromDB() {
 }
 
 // ────────────────────────────────────────────────
-// PATIENT SEARCH MODAL
+// PATIENT SEARCH MODAL - DROPDOWN STYLE
 // ────────────────────────────────────────────────
 function setupPatientModalSearch() {
-  const input = document.getElementById('patientName');
+  const dropdownBtn = document.getElementById('patientDropdownBtn');
+  const displaySpan = document.getElementById('patientNameDisplay');
   const modal = document.getElementById('salesPatientModal');
   const modalInput = document.getElementById('salesPatientSearch');
   const list = document.getElementById('salesPatientList');
 
-  if (!input || !modal || !modalInput || !list) {
-    console.error('❌ Patient modal elements missing:', {
-      input: !!input,
+  if (!dropdownBtn || !modal || !modalInput || !list || !displaySpan) {
+    console.error('❌ Patient dropdown elements missing:', {
+      dropdownBtn: !!dropdownBtn,
       modal: !!modal,
       modalInput: !!modalInput,
-      list: !!list
+      list: !!list,
+      displaySpan: !!displaySpan
     });
     return;
   }
 
   let debounce;
 
-  input.addEventListener('input', () => {
-    // Clear previously selected patient ID
-    document.getElementById('patientId').value = '';
-
-    const term = input.value.trim();
-
-    // Show modal even on 1 character
-    if (term.length < 1) {
-      modal.style.display = 'none';
-      return;
-    }
-
+  // Open modal when dropdown button is clicked
+  dropdownBtn.addEventListener('click', () => {
     modal.style.display = 'flex';
-    modalInput.value = term;
+    modal.classList.add('show');
+    dropdownBtn.classList.add('open');
+    modalInput.value = '';
     modalInput.focus();
-    fetchPatients(term);
+    
+    // Load all patients initially
+    fetchPatients('');
   });
 
+  // Search as user types in modal
   modalInput.addEventListener('input', () => {
-    document.getElementById('patientId').value = ''; // reset ID
+    document.getElementById('patientId').value = '';
     clearTimeout(debounce);
     debounce = setTimeout(() => {
       fetchPatients(modalInput.value.trim());
     }, 300);
   });
 
-  document.getElementById('closePatientModal').onclick =
-  document.getElementById('btnCancelPatient').onclick = () => {
+  // Close modal handlers
+  const closeModal = () => {
     modal.style.display = 'none';
-    input.blur();
+    modal.classList.remove('show');
+    dropdownBtn.classList.remove('open');
   };
 
+  document.getElementById('closePatientModal').onclick = closeModal;
+  document.getElementById('btnCancelPatient').onclick = closeModal;
+
   modal.onclick = e => {
-    if (e.target === modal) modal.style.display = 'none';
+    if (e.target === modal) closeModal();
   };
 }
 
@@ -177,44 +178,30 @@ async function fetchPatients(term) {
     return;
   }
 
+  // Show loading state
+  container.innerHTML = `
+    <div class="loading-state">
+      <div class="spinner"></div>
+      Loading patients...
+    </div>
+  `;
+
   try {
-    const res = await fetch(`../api/search_patients.php?search=${encodeURIComponent(term)}`);
-    if (!res.ok) throw new Error(res.status);
+    const url = `../api/search_patients.php?search=${encodeURIComponent(term)}`;
+    
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const patients = await res.json();
     container.innerHTML = '';
 
-    // ❌ No results
+    // No results
     if (!patients.length) {
-      document.getElementById('patientId').value = '';
       container.innerHTML = `<div class="no-results">No patients found</div>`;
       return;
     }
 
-    // ✅ 1️⃣ AUTO-SELECT IF EXACT MATCH (BEST)
-    const exact = patients.find(p =>
-      p.name.toLowerCase() === term.toLowerCase()
-    );
-
-    if (exact) {
-      document.getElementById('patientName').value = exact.name;
-      document.getElementById('patientId').value = exact.id;
-      document.getElementById('salesPatientModal').style.display = 'none';
-      console.log('✅ Auto-selected exact match:', exact.name);
-      return;
-    }
-
-    // ✅ 2️⃣ AUTO-SELECT IF ONLY ONE RESULT
-    if (patients.length === 1) {
-      const p = patients[0];
-      document.getElementById('patientName').value = p.name;
-      document.getElementById('patientId').value = p.id;
-      document.getElementById('salesPatientModal').style.display = 'none';
-      console.log('✅ Auto-selected single result:', p.name);
-      return;
-    }
-
-    // 🟡 3️⃣ MULTIPLE RESULTS → USER MUST CLICK
+    // Display all patients as cards
     patients.forEach(p => {
       const card = document.createElement('div');
       card.className = 'patient-card';
@@ -227,9 +214,23 @@ async function fetchPatients(term) {
       `;
 
       card.onclick = () => {
+        const dropdownBtn = document.getElementById('patientDropdownBtn');
+        const displaySpan = document.getElementById('patientNameDisplay');
+        
+        // Update display and hidden fields
+        displaySpan.textContent = p.name;
         document.getElementById('patientName').value = p.name;
         document.getElementById('patientId').value = p.id;
+        
+        // Add selection styling
+        dropdownBtn.classList.add('has-selection');
+        
+        // Close modal
         document.getElementById('salesPatientModal').style.display = 'none';
+        document.getElementById('salesPatientModal').classList.remove('show');
+        dropdownBtn.classList.remove('open');
+        
+        console.log('✅ Selected patient:', p.name);
       };
 
       container.appendChild(card);
@@ -240,8 +241,6 @@ async function fetchPatients(term) {
     container.innerHTML = `<div class="no-results">Error loading patients</div>`;
   }
 }
-
-
 
 function getInitials(name) {
   if (!name) return '?';
@@ -456,6 +455,14 @@ function setupButtons() {
       saleItems = [];
       renderSaleItems();
       updateTotal();
+      
+      // Reset patient selection
+      const dropdownBtn = document.getElementById('patientDropdownBtn');
+      const displaySpan = document.getElementById('patientNameDisplay');
+      displaySpan.textContent = 'Select a patient...';
+      document.getElementById('patientName').value = '';
+      document.getElementById('patientId').value = '';
+      dropdownBtn.classList.remove('has-selection');
     }
   };
 }
@@ -486,13 +493,13 @@ function setupPaymentModal() {
 }
 
 function completeSale() {
-  const patientId = document.getElementById('patientId').value || null; // Allow null
+  const patientId = document.getElementById('patientId').value || null;
   const patientName = document.getElementById('patientName').value || 'Walk-in Customer';
   const saleDate = document.getElementById('saleDate').value;
 
   const payload = {
-    patient_id: patientId, // Can be null for walk-in
-    patient_name: patientName, // Include name for reference
+    patient_id: patientId,
+    patient_name: patientName,
     sale_date: saleDate,
     payment_method: selectedPaymentMethod,
     total_amount: saleItems.reduce((s, i) => s + i.price * i.quantity, 0),
@@ -523,8 +530,14 @@ function completeSale() {
     // Reset UI
     saleItems = [];
     selectedPaymentMethod = null;
+    
+    const dropdownBtn = document.getElementById('patientDropdownBtn');
+    const displaySpan = document.getElementById('patientNameDisplay');
+    displaySpan.textContent = 'Select a patient...';
     document.getElementById('patientName').value = '';
     document.getElementById('patientId').value = '';
+    dropdownBtn.classList.remove('has-selection');
+    
     document.getElementById('paymentModal').style.display = 'none';
 
     renderSaleItems();

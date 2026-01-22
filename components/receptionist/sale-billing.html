@@ -4,15 +4,15 @@
     <div class="inventory-panel">
       <div class="patient-header">
         <div class="patient-name-group">
-          <label for="patientName">Patient Name <span class="required">*</span></label>
-          <input 
-            type="text" 
-            id="patientName" 
-            placeholder="Type to search patients..." 
-            autocomplete="off"
-            required
-          >
+          <label for="patientNameDisplay">Patient Name <span class="required">*</span></label>
+          <button type="button" class="patient-dropdown-btn" id="patientDropdownBtn">
+            <span id="patientNameDisplay">Select a patient...</span>
+            <svg class="dropdown-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+          </button>
           <input type="hidden" id="patientId">
+          <input type="hidden" id="patientName">
         </div>
 
         <div class="date-group">

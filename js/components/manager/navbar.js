@@ -1,4 +1,3 @@
-
 // Load navbar HTML
 fetch('../components/manager/navbar.html')
   .then(res => res.text())
@@ -46,8 +45,7 @@ function changePage(pageId, event) {
   // Hide ALL placeholders first
   const placeholders = [
     'frame-placeholder',
-    'purchase-placeholder',
-    'supplier-placeholder',
+    'condemnation-placeholder',
     'reports-placeholder'
   ];
   
@@ -59,28 +57,35 @@ function changePage(pageId, event) {
   // Show the correct placeholder based on pageId
   switch(pageId) {
     case 'inventory':
-      document.getElementById('frame-placeholder').style.display = 'block';
-      updateDropdownText('Inventory');
+      const framePlaceholder = document.getElementById('frame-placeholder');
+      if (framePlaceholder) {
+        framePlaceholder.style.display = 'block';
+        updateDropdownText('Inventory');
+      }
       break;
       
-    case 'purchase-orders':
-      document.getElementById('purchase-placeholder').style.display = 'block';
-      updateDropdownText('Purchase Orders');
+    case 'condemnation':
+      const condemnPlaceholder = document.getElementById('condemnation-placeholder');
+      if (condemnPlaceholder) {
+        condemnPlaceholder.style.display = 'block';
+        updateDropdownText('Condemnation');
+        
+        // Initialize condemnation with delay to ensure HTML is loaded
+        setTimeout(() => {
+          if (typeof initCondemnation === 'function') {
+            initCondemnation();
+          }
+        }, 100);
+      } else {
+        console.error('❌ condemnation-placeholder not found!');
+      }
       break;
-      
-    case 'suppliers':
-      document.getElementById('supplier-placeholder').style.display = 'block';
-      updateDropdownText('Suppliers');
-      break;
-      
-    // case 'sales-billing':
-      // When you create sales-billing placeholder, add it here
-      // document.getElementById('sales-billing-placeholder').style.display = 'block';
-      // alert('Sales & Billing - Coming Soon!');
-      // break;
       
     case 'reports':
-      document.getElementById('reports-placeholder').style.display = 'block';
+      const reportsPlaceholder = document.getElementById('reports-placeholder');
+      if (reportsPlaceholder) {
+        reportsPlaceholder.style.display = 'block';
+      }
       break;
       
     default:
@@ -96,7 +101,7 @@ function changePage(pageId, event) {
   updateActiveButton(pageId);
 }
 
-// Update dropdown text
+// ✅ ADD THIS MISSING FUNCTION
 function updateDropdownText(text) {
   const dropdownText = document.getElementById('inventoryDropdownText');
   if (dropdownText) {
@@ -111,12 +116,9 @@ function updateActiveButton(pageId) {
   });
   
   // Add active class to the correct button
-  if (pageId === 'inventory' || pageId === 'purchase-orders' || pageId === 'suppliers') {
+  if (pageId === 'inventory' || pageId === 'condemnation') {
     const inventoryBtn = document.querySelector('.nav-dropdown .nav-button');
     if (inventoryBtn) inventoryBtn.classList.add('active');
-  // } else if (pageId === 'sales-billing') {
-  //   const salesBtn = document.querySelector('.nav-button[onclick*="sales-billing"]');
-  //   if (salesBtn) salesBtn.classList.add('active');
   } else if (pageId === 'reports') {
     const reportsBtn = document.querySelector('.nav-button[onclick*="reports"]');
     if (reportsBtn) reportsBtn.classList.add('active');
