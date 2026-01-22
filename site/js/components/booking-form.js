@@ -15,12 +15,154 @@ fetch('components/booking-form.html')
     }
 
     placeholder.innerHTML = html;
+    setMinDate();
     attachFormHandler();
   })
   .catch(err => {
     console.error('Booking form load error:', err);
   });
 
+// ===============================
+// Set Minimum Date
+// ===============================
+function setMinDate() {
+  const dateInput = document.getElementById('date');
+  if (dateInput) {
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+  }
+}
+
+// ===============================
+// Step Navigation
+// ===============================
+let currentStep = 1;
+
+window.nextStep = function(stepNumber) {
+  if (!validateStep(currentStep)) {
+    return;
+  }
+
+  document.getElementById(`step-${currentStep}`).classList.add('hidden');
+  document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+  
+  if (stepNumber === 3) {
+    populateConfirmation();
+  }
+  
+  currentStep = stepNumber;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.prevStep = function() {
+  document.getElementById(`step-${currentStep}`).classList.add('hidden');
+  const prevStepNum = currentStep - 1;
+  document.getElementById(`step-${prevStepNum}`).classList.remove('hidden');
+  currentStep = prevStepNum;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// ===============================
+// Validate Current Step
+// ===============================
+function validateStep(step) {
+  if (step === 1) {
+    const service = document.querySelector('input[name="service"]:checked');
+    const date = document.getElementById('date').value;
+    const time = document.getElementById('time').value;
+    
+    if (!service || !date || !time) {
+      alert('Please fill in all fields');
+      return false;
+    }
+  }
+  
+  if (step === 2) {
+    const firstname = document.getElementById('firstname').value.trim();
+    const lastname = document.getElementById('lastname').value.trim();
+    const address = document.getElementById('address').value.trim();
+    const birthdate = document.getElementById('birthdate').value;
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
+    
+    if (!firstname || !lastname || !address || !birthdate || !phone || !email) {
+      alert('Please fill in all required fields');
+      return false;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert('Please enter a valid email address');
+      return false;
+    }
+    
+    const phoneRegex = /^09\d{9}$/;
+    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+      alert('Please enter a valid phone number (09XXXXXXXXX)');
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+// ===============================
+// Populate Confirmation
+// ===============================
+function populateConfirmation() {
+  const service = document.querySelector('input[name="service"]:checked').value;
+  const date = document.getElementById('date').value;
+  const time = document.getElementById('time').value;
+  const firstname = document.getElementById('firstname').value;
+  const middlename = document.getElementById('middlename').value;
+  const lastname = document.getElementById('lastname').value;
+  const suffix = document.getElementById('suffix').value;
+  const address = document.getElementById('address').value;
+  const birthdate = document.getElementById('birthdate').value;
+  const phone = document.getElementById('phone').value;
+  const email = document.getElementById('email').value;
+  
+  let fullName = `${firstname} ${middlename} ${lastname}`;
+  if (suffix) fullName += ` ${suffix}`;
+  
+  const dateObj = new Date(date + 'T00:00:00');
+  const formattedDate = dateObj.toLocaleDateString('en-US', { 
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+  });
+  
+  const [hour, minute] = time.split(':');
+  const hourNum = parseInt(hour);
+  const ampm = hourNum >= 12 ? 'PM' : 'AM';
+  const displayHour = hourNum % 12 || 12;
+  const formattedTime = `${displayHour}:${minute} ${ampm}`;
+  
+  document.getElementById('confirmation-details').innerHTML = `
+    <div class="summary-item">
+      <div class="summary-content">
+        <div class="summary-label">Service</div>
+        <div class="summary-value">${service}</div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-content">
+        <div class="summary-label">Date & Time</div>
+        <div class="summary-value">${formattedDate} at ${formattedTime}</div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-content">
+        <div class="summary-label">Name</div>
+        <div class="summary-value">${fullName}</div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-content">
+        <div class="summary-label">Contact</div>
+        <div class="summary-value">${phone} • ${email}</div>
+      </div>
+    </div>
+  `;
+}
 
 // ===============================
 // Submit Booking
@@ -35,48 +177,59 @@ function attachFormHandler() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    if (typeof bookingData === 'undefined') {
-      alert('Booking data is missing');
-      return;
-    }
+    const bookingData = {
+      service: document.querySelector('input[name="service"]:checked').value,
+      date: document.getElementById('date').value,
+      time: document.getElementById('time').value,
+      firstname: document.getElementById('firstname').value.trim(),
+      middlename: document.getElementById('middlename').value.trim() || null,
+      lastname: document.getElementById('lastname').value.trim(),
+      suffix: document.getElementById('suffix').value.trim() || null,
+      address: document.getElementById('address').value.trim(),
+      birthdate: document.getElementById('birthdate').value,
+      phone: document.getElementById('phone').value.trim(),
+      email: document.getElementById('email').value.trim()
+    };
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Submitting...';
 
     try {
-      const res = await fetch(
-        '../api/submit_booking.php',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(bookingData)
-        }
-      );
+      const res = await fetch('../api/submit_booking.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingData)
+      });
 
-      // Read as text FIRST (prevents JSON crash)
       const text = await res.text();
-
       let data;
+      
       try {
         data = JSON.parse(text);
       } catch {
         console.error('Server returned non-JSON:', text);
-        throw new Error('Server error: invalid JSON response');
+        throw new Error('Server error: invalid response');
       }
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Booking submission failed');
+        throw new Error(data.error || 'Booking failed');
       }
 
-      alert('Booking submitted successfully!');
+      alert('✅ Booking confirmed successfully!');
       form.reset();
-
-      if (typeof resetBooking === 'function') {
-        resetBooking();
-      }
+      document.getElementById('step-3').classList.add('hidden');
+      document.getElementById('step-1').classList.remove('hidden');
+      currentStep = 1;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (err) {
-      console.error('Booking submit error:', err);
-      alert(err.message);
+      console.error('Booking error:', err);
+      alert('❌ Error: ' + err.message);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
     }
   });
 }

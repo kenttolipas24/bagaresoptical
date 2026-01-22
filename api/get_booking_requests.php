@@ -1,91 +1,68 @@
 <?php
-// ==============================================
-// get_booking_request.php
-// ==============================================
-
 header("Content-Type: application/json");
-
-// Optional: show errors during development (remove later)
-// error_reporting(E_ALL);
-// ini_set('display_errors', 1);
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // ❗ hide errors from breaking JSON
 
 $conn = new mysqli("localhost", "root", "", "bagares_system");
 
 if ($conn->connect_error) {
-    http_response_code(500);
-    echo json_encode(["error" => "Database connection failed"]);
+    echo json_encode([]); // ✅ ALWAYS ARRAY
     exit;
 }
 
-// Get only PENDING requests by default
-$status = isset($_GET['status']) ? trim($_GET['status']) : 'pending';
+$date = $_GET['date'] ?? null;
 
-$sql = "SELECT 
-            pr.id,
-            pr.service,
-            pr.appointment_date,
-            pr.appointment_time,
-            pr.status,
-            pr.created_at,
-            p.firstname,
-            p.middlename,
-            p.lastname,
-            p.suffix,
-            p.address,
-            p.birthdate,
-            p.email
-        FROM patient_request pr
-        JOIN patient p ON pr.patient_id = p.patient_id";
+$sql = "
+SELECT
+    a.appointment_id,
+    a.patient_id,
+    a.appointment_date,
+    a.appointment_time,
+    a.service,
+    a.status,
+    a.created_at,
+    CONCAT(
+        p.firstname, ' ',
+        IFNULL(p.middlename, ''), ' ',
+        p.lastname, ' ',
+        IFNULL(p.suffix, '')
+    ) AS patient_name
+FROM appointment a
+INNER JOIN patient p ON p.patient_id = a.patient_id
+WHERE a.status = 'scheduled'
+";
 
-// Always filter by status (show pending by default, or specific status if requested)
-if ($status !== 'all') {
-    $sql .= " WHERE pr.status = ?";
+if ($date) {
+    $sql .= " AND a.appointment_date = ?";
 }
 
-$sql .= " ORDER BY pr.created_at DESC";
+$sql .= " ORDER BY a.appointment_date DESC, a.appointment_time DESC";
 
-if ($status !== 'all') {
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) {
-        http_response_code(500);
-        echo json_encode(["error" => "Prepare failed: " . $conn->error]);
-        exit;
-    }
-    $stmt->bind_param("s", $status);
-    $stmt->execute();
-    $result = $stmt->get_result();
-} else {
-    $result = $conn->query($sql);
+$stmt = $conn->prepare($sql);
+
+if ($date) {
+    $stmt->bind_param("s", $date);
 }
 
-if (!$result) {
-    http_response_code(500);
-    echo json_encode(["error" => "Query failed: " . $conn->error]);
-    exit;
-}
+$stmt->execute();
+$result = $stmt->get_result();
 
-$requests = [];
+$appointments = [];
+
 while ($row = $result->fetch_assoc()) {
-    $requests[] = [
-        'id'           => $row['id'],
-        'firstname'    => $row['firstname'] ?? '',
-        'middlename'   => $row['middlename'] ?? '',
-        'lastname'     => $row['lastname'] ?? '',
-        'suffix'       => $row['suffix'] ?? '',
-        'address'      => $row['address'] ?? '',
-        'birthdate'    => $row['birthdate'] ?? '',
-        'email'        => $row['email'] ?? '',
-        'service'      => $row['service'] ?? '',
-        'date'         => $row['appointment_date'],
-        'time'         => $row['appointment_time'],
-        'status'       => $row['status'] ?? 'pending',
-        'created_at'   => $row['created_at']
+    $appointments[] = [
+        "appointment_id"   => (int)$row["appointment_id"],
+        "patient_id"       => (int)$row["patient_id"],
+        "patient_name"     => trim($row["patient_name"]),
+        "appointment_date" => $row["appointment_date"],
+        "appointment_time" => $row["appointment_time"],
+        "service"          => $row["service"],
+        "status"           => $row["status"],
+        "created_at"       => $row["created_at"]
     ];
 }
 
-// Success: pure JSON
-echo json_encode($requests);
+echo json_encode($appointments); // ✅ ALWAYS ARRAY
 
-if (isset($stmt)) $stmt->close();
+$stmt->close();
 $conn->close();
-?>
