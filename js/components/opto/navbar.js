@@ -1,44 +1,36 @@
-// navbar.js - FIXED to work with your actual HTML
+// navbar.js - FIXED with proper active state highlighting
 
 fetch('../components/optometrists/navbar.html')
   .then(res => res.text())
   .then(data => {
     document.getElementById('navbar-placeholder').innerHTML = data;
 
-    // After navbar is loaded, attach click events to buttons
-    const buttons = document.querySelectorAll('.nav-button');
-
-    buttons.forEach(button => {
-      button.addEventListener('click', function(e) {
-        e.preventDefault();
-
-        // Extract pageId from onclick attribute - FIX THE REGEX
-        const onclickAttr = this.getAttribute('onclick');
-        const match = onclickAttr.match(/changePage\('([^']+)'/);
-        
-        if (match) {
-          const pageId = match[1];
-          
-          changePage(pageId);
-          
-          // Update active state
-          buttons.forEach(b => b.classList.remove('active'));
-          this.classList.add('active');
-        }
-      });
-    });
-
     // Show Appointment by default on page load
     changePage('appointment');
-    // Mark Appointment button as active
-    const appointmentBtn = document.querySelector('.nav-button[onclick*="appointment"]');
-    if (appointmentBtn) appointmentBtn.classList.add('active');
+    
+    // Mark Appointment button as active by default
+    setTimeout(() => {
+      const appointmentBtn = document.querySelector('.nav-button[onclick*="appointment"]');
+      if (appointmentBtn) {
+        appointmentBtn.classList.add('active');
+      }
+    }, 0);
   })
   .catch(error => console.error('Error loading navbar:', error));
 
 // Single function to switch pages
 function changePage(pageId, event) {
   console.log('Switching to:', pageId);
+
+  // Update active state on buttons
+  const buttons = document.querySelectorAll('.nav-button');
+  buttons.forEach(b => b.classList.remove('active'));
+  
+  // Add active to the clicked button
+  const activeBtn = document.querySelector(`.nav-button[onclick*="${pageId}"]`);
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+  }
 
   // Hide all placeholders
   document.getElementById('Cal&Det-placeholder').style.display = 'none';
@@ -56,4 +48,21 @@ function changePage(pageId, event) {
   } else if (pageId === 'reports') {
     document.getElementById('reports-placeholder').style.display = 'block';
   }
+}
+
+// Optional: If you need to manually trigger page changes from elsewhere in your code
+function setActivePage(pageId) {
+  const buttons = document.querySelectorAll('.nav-button');
+  
+  // Remove active from all
+  buttons.forEach(b => b.classList.remove('active'));
+  
+  // Find and activate the correct button
+  const targetBtn = document.querySelector(`.nav-button[onclick*="${pageId}"]`);
+  if (targetBtn) {
+    targetBtn.classList.add('active');
+  }
+  
+  // Switch page
+  changePage(pageId);
 }

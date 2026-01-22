@@ -109,9 +109,10 @@
 
 
 
+
 // ==============================================
 // get_patient_records.php
-// Fetch patient records with their latest eye examination
+// Fetch patients - DEFAULT shows only NO EYE EXAM
 // ==============================================
 
 header("Content-Type: application/json");
@@ -127,7 +128,10 @@ try {
     
     $conn->set_charset("utf8mb4");
     
-    // Get patients with their most recent eye examination
+    // Get filter parameter (defaults to 'no-exam')
+    $filter = isset($_GET['filter']) ? $_GET['filter'] : 'no-exam';
+    
+    // Base query
     $sql = "SELECT 
                 p.patient_id,
                 p.firstname,
@@ -138,6 +142,7 @@ try {
                 p.birthdate,
                 p.email,
                 p.phone,
+                COALESCE(p.patient_type, 'walk-in') as patient_type,
                 e.exam_id,
                 e.exam_date,
                 e.od_sph,
@@ -166,8 +171,28 @@ try {
                     pd,
                     ROW_NUMBER() OVER (PARTITION BY patient_id ORDER BY exam_date DESC) as rn
                 FROM eye_examinations
-            ) e ON p.patient_id = e.patient_id AND e.rn = 1
-            ORDER BY p.created_at DESC";
+            ) e ON p.patient_id = e.patient_id AND e.rn = 1";
+    
+    // Apply WHERE conditions based on filter
+    $whereConditions = [];
+    
+    if ($filter === 'no-exam') {
+        // Show ONLY patients WITHOUT eye exam
+        $whereConditions[] = "e.exam_id IS NULL";
+    } elseif ($filter === 'walk-in') {
+        // Show only walk-in patients
+        $whereConditions[] = "(p.patient_type = 'walk-in' OR p.patient_type IS NULL)";
+    } elseif ($filter === 'online') {
+        // Show only online patients
+        $whereConditions[] = "p.patient_type = 'online'";
+    }
+    // If 'all', no WHERE conditions
+    
+    if (!empty($whereConditions)) {
+        $sql .= " WHERE " . implode(" AND ", $whereConditions);
+    }
+    
+    $sql .= " ORDER BY p.created_at DESC";
     
     $result = $conn->query($sql);
     
@@ -187,16 +212,17 @@ try {
             'birthdate' => $row['birthdate'],
             'email' => $row['email'],
             'phone' => $row['phone'],
+            'patient_type' => $row['patient_type'],
             'exam_date' => $row['exam_date'],
-            'od_sph' => $row['od_sph'] ?? '—',
-            'od_cyl' => $row['od_cyl'] ?? '—',
-            'od_axis' => $row['od_axis'] ?? '—',
-            'od_add' => $row['od_add'] ?? '—',
-            'os_sph' => $row['os_sph'] ?? '—',
-            'os_cyl' => $row['os_cyl'] ?? '—',
-            'os_axis' => $row['os_axis'] ?? '—',
-            'os_add' => $row['os_add'] ?? '—',
-            'pd' => $row['pd'] ?? '—'
+            'od_sph' => $row['od_sph'],
+            'od_cyl' => $row['od_cyl'],
+            'od_axis' => $row['od_axis'],
+            'od_add' => $row['od_add'],
+            'os_sph' => $row['os_sph'],
+            'os_cyl' => $row['os_cyl'],
+            'os_axis' => $row['os_axis'],
+            'os_add' => $row['os_add'],
+            'pd' => $row['pd']
         ];
     }
     
@@ -210,6 +236,7 @@ try {
         "error" => $e->getMessage()
     ]);
 }
+
 
 
 

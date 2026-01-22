@@ -1,4 +1,4 @@
-// ProfileDropdown.js - Admin Version
+// ProfileDropdown.js - Cleaned Version
 
 let profileModal = null;
 let profileButton = null;
@@ -9,7 +9,7 @@ function loadProfileDropdown() {
         .then(data => {
             document.getElementById('profile-dropdown-placeholder').innerHTML = data;
 
-            // Now that modal exists, get references
+            // Get references
             profileModal = document.getElementById('profileModal');
             profileButton = document.querySelector('.icon-button.profile-btn');
 
@@ -18,7 +18,7 @@ function loadProfileDropdown() {
                 return;
             }
 
-            // Attach click listener to button
+            // Toggle dropdown on button click
             profileButton.addEventListener('click', function(e) {
                 e.stopPropagation();
                 profileModal.classList.toggle('active');
@@ -40,28 +40,17 @@ function loadProfileDropdown() {
                 }
             });
 
-            // Menu item clicks - UPDATED TO SHOW CONTENT
+            // Handle menu item clicks
             profileModal.querySelectorAll('.menu-item').forEach(item => {
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const text = this.querySelector('.menu-text').textContent.trim();
-
+                    
                     if (this.classList.contains('logout')) {
                         handleLogout();
                     } else {
-                        // Map menu text to section names
-                        const sectionMap = {
-                            'Basic Information': 'basic-info',
-                            'My Profile': 'my-profile',
-                            'Settings': 'settings',
-                            'Notifications': 'notifications',
-                            'Privacy & Security': 'privacy',
-                            'Help & Support': 'help'
-                        };
-                        
-                        const section = sectionMap[text];
-                        if (section) {
-                            showProfileSection(section);
+                        const text = this.querySelector('.menu-text').textContent.trim();
+                        if (text === 'My Profile') {
+                            showMyProfile();
                         }
                     }
 
@@ -70,212 +59,72 @@ function loadProfileDropdown() {
                 });
             });
 
-            console.log('Profile dropdown ready!');
+            console.log('Profile dropdown loaded');
         })
         .catch(err => console.error('Failed to load profile dropdown:', err));
 }
 
-// Show profile section
-function showProfileSection(section) {
-    console.log('Opening section:', section);
+// Show My Profile section
+function showMyProfile() {
+    // Hide user management
+    const usersTab = document.getElementById('usersTab-placeholder');
+    if (usersTab) {
+        usersTab.style.display = 'none';
+    }
+
+    // Hide audit tab if exists
+    const auditTab = document.getElementById('auditTab-placeholder');
+    if (auditTab) {
+        auditTab.style.display = 'none';
+    }
     
-    // Hide main tabs
-    document.getElementById('usersTab-placeholder').style.display = 'none';
-    document.getElementById('auditTab-placeholder').style.display = 'none';
-    
-    // Show profile section
-    const profileSection = document.getElementById('profile-section-placeholder');
-    profileSection.style.display = 'block';
-    
-    // Load specific content
-    loadProfileContent(section);
-    
+    // Show profile
+    const profileContainer = document.querySelector('.profile-container');
+    if (profileContainer) {
+        profileContainer.classList.add('active');
+        profileContainer.style.display = 'block';
+    }
+
     // Remove active from nav buttons
     document.querySelectorAll('.nav-button').forEach(btn => {
         btn.classList.remove('active');
     });
 }
 
-// Load profile content
-function loadProfileContent(section) {
-    const profileSection = document.getElementById('profile-section-placeholder');
-    
-    let content = '';
-    
-    switch(section) {
-        case 'basic-info':
-            content = `
-                <div class="profile-content">
-                    <div class="profile-header">
-                        <button class="back-button" onclick="backToMain()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            Back
-                        </button>
-                        <h2>Basic Information</h2>
-                    </div>
-                    <div class="profile-body">
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <label>Full Name</label>
-                                <p>Admin User</p>
-                            </div>
-                            <div class="info-item">
-                                <label>Username</label>
-                                <p>admin</p>
-                            </div>
-                            <div class="info-item">
-                                <label>Email</label>
-                                <p>admin@example.com</p>
-                            </div>
-                            <div class="info-item">
-                                <label>Role</label>
-                                <p>Administrator</p>
-                            </div>
-                            <div class="info-item">
-                                <label>Status</label>
-                                <p><span class="badge badge-active">Active</span></p>
-                            </div>
-                            <div class="info-item">
-                                <label>Account Created</label>
-                                <p>Jan 1, 2026</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            break;
-            
-        case 'my-profile':
-            content = `
-                <div class="profile-content">
-                    <div class="profile-header">
-                        <button class="back-button" onclick="backToMain()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            Back
-                        </button>
-                        <h2>My Profile</h2>
-                    </div>
-                    <div class="profile-body">
-                        <h3>Edit Profile</h3>
-                        <p>Profile editing form coming soon...</p>
-                    </div>
-                </div>
-            `;
-            break;
-            
-        case 'settings':
-            content = `
-                <div class="profile-content">
-                    <div class="profile-header">
-                        <button class="back-button" onclick="backToMain()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            Back
-                        </button>
-                        <h2>Settings</h2>
-                    </div>
-                    <div class="profile-body">
-                        <h3>Application Settings</h3>
-                        <p>Settings page coming soon...</p>
-                    </div>
-                </div>
-            `;
-            break;
-            
-        case 'notifications':
-            content = `
-                <div class="profile-content">
-                    <div class="profile-header">
-                        <button class="back-button" onclick="backToMain()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            Back
-                        </button>
-                        <h2>Notifications</h2>
-                    </div>
-                    <div class="profile-body">
-                        <h3>Notification Center</h3>
-                        <p>No new notifications</p>
-                    </div>
-                </div>
-            `;
-            break;
-            
-        case 'privacy':
-            content = `
-                <div class="profile-content">
-                    <div class="profile-header">
-                        <button class="back-button" onclick="backToMain()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            Back
-                        </button>
-                        <h2>Privacy & Security</h2>
-                    </div>
-                    <div class="profile-body">
-                        <h3>Security Settings</h3>
-                        <p>Change password and manage security settings...</p>
-                    </div>
-                </div>
-            `;
-            break;
-            
-        case 'help':
-            content = `
-                <div class="profile-content">
-                    <div class="profile-header">
-                        <button class="back-button" onclick="backToMain()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            Back
-                        </button>
-                        <h2>Help & Support</h2>
-                    </div>
-                    <div class="profile-body">
-                        <h3>Need Help?</h3>
-                        <p>Documentation and support resources coming soon...</p>
-                    </div>
-                </div>
-            `;
-            break;
+// Show User Management (called from Back button)
+function showUserManagement() {
+    // Show user management
+    const usersTab = document.getElementById('usersTab-placeholder');
+    if (usersTab) {
+        usersTab.style.display = 'block';
     }
     
-    profileSection.innerHTML = content;
-}
+    // Hide profile
+    const profileContainer = document.querySelector('.profile-container');
+    if (profileContainer) {
+        profileContainer.classList.remove('active');
+        profileContainer.style.display = 'none';
+    }
 
-// Back to main
-function backToMain() {
-    document.getElementById('profile-section-placeholder').style.display = 'none';
-    document.getElementById('usersTab-placeholder').style.display = 'block';
-    
-    // Re-activate User Management tab
+    // Reactivate Users tab if switchTab function exists
     if (typeof switchTab === 'function') {
         switchTab('users');
     }
 }
 
-// Logout
+// Logout handler
 function handleLogout() {
-        window.location.href = '../login.html';
+    // Clear session data
+    sessionStorage.clear();
+    localStorage.clear();
+    
+    // Redirect to login
+    window.location.href = '../login.html';
 }
 
 // Export functions globally
-window.showProfileSection = showProfileSection;
-window.backToMain = backToMain;
+window.showMyProfile = showMyProfile;
+window.showUserManagement = showUserManagement;
 window.handleLogout = handleLogout;
 
 // Load when page is ready

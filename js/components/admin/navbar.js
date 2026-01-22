@@ -10,35 +10,50 @@ fetch('../components/admin/navbar.html')
   .catch(error => console.error('Error loading navbar:', error));
 
 // Function to switch between tabs
-function switchTab(pageId) {
+// function switchTab(pageId) {
+//   console.log('Switching to:', pageId);
+
+//   // Get all tab placeholders
+//   const usersTab = document.getElementById('usersTab-placeholder');
+//   const auditTab = document.getElementById('auditTab-placeholder');
+
+//   // Hide all tabs
+//   usersTab.style.display = 'none';
+//   auditTab.style.display = 'none';
+
+//   // Show the selected tab
+//   if (pageId === 'users') {
+//     usersTab.style.display = 'block';
+//   } else if (pageId === 'audit') {
+//     auditTab.style.display = 'block';
+//   }
+
+//   // Update active state on buttons
+//   const buttons = document.querySelectorAll('.nav-button');
+//   buttons.forEach(btn => {
+//     const onclick = btn.getAttribute('onclick');
+//     if (onclick && onclick.includes(pageId)) {
+//       btn.classList.add('active');
+//     } else {
+//       btn.classList.remove('active');
+//     }
+//   });
+// }
+
+// // Export for global use
+// window.switchTab = switchTab;
+
+function changePage(pageId, event) {
   console.log('Switching to:', pageId);
 
-  // Get all tab placeholders
-  const usersTab = document.getElementById('usersTab-placeholder');
-  const auditTab = document.getElementById('auditTab-placeholder');
-
-  // Hide all tabs
-  usersTab.style.display = 'none';
-  auditTab.style.display = 'none';
-
-  // Show the selected tab
+  // Hide all placeholders
+  document.getElementById('usersTab-placeholder').style.display = 'none';
+  document.getElementById('auditTab-placeholder').style.display = 'none';
+  
+  // Show the correct one
   if (pageId === 'users') {
-    usersTab.style.display = 'block';
+    document.getElementById('usersTab-placeholder').style.display = 'block';
   } else if (pageId === 'audit') {
-    auditTab.style.display = 'block';
+    document.getElementById('auditTab-placeholder').style.display = 'block';
   }
-
-  // Update active state on buttons
-  const buttons = document.querySelectorAll('.nav-button');
-  buttons.forEach(btn => {
-    const onclick = btn.getAttribute('onclick');
-    if (onclick && onclick.includes(pageId)) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
 }
-
-// Export for global use
-window.switchTab = switchTab;

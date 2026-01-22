@@ -105,7 +105,6 @@ fetch('../components/optometrists/patient record.html')
   .then(res => res.text())
   .then(html => {
     document.getElementById('patient-record-placeholder').innerHTML = html;
-    // FIX: Call the correct initialization function
     initializePatientTable();
   })
   .catch(err => console.error('Failed to load patient record HTML:', err));
@@ -115,13 +114,63 @@ fetch('../components/optometrists/patient record.html')
 // -----------------------------------------------
 function initializePatientTable() {
   setTimeout(() => {
-    updatePatientTable();
+    // Load with "No Eye Exam" filter by default
+    updatePatientTable('no-exam');
     setupSearch();
     if (typeof setupDropdownListeners === 'function') {
       setupDropdownListeners();
     }
   }, 100);
 }
+
+// -----------------------------------------------
+// FILTER DROPDOWN TOGGLE
+// -----------------------------------------------
+window.toggleFilterDropdown = function(event) {
+  event.stopPropagation();
+  const dropdown = document.getElementById('filterDropdown');
+  const container = document.querySelector('.filter-dropdown-container');
+  
+  dropdown.classList.toggle('show');
+  container.classList.toggle('active');
+};
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+  const dropdown = document.getElementById('filterDropdown');
+  const container = document.querySelector('.filter-dropdown-container');
+  
+  if (dropdown && !event.target.closest('.filter-dropdown-container')) {
+    dropdown.classList.remove('show');
+    if (container) container.classList.remove('active');
+  }
+});
+
+// -----------------------------------------------
+// SELECT FILTER
+// -----------------------------------------------
+let currentFilter = 'no-exam'; // Default to "No Eye Exam"
+
+window.selectFilter = function(filterType, filterText, event) {
+  event.stopPropagation();
+  currentFilter = filterType;
+  
+  // Update button text
+  document.getElementById('current-filter-text').textContent = filterText;
+  
+  // Update active state
+  document.querySelectorAll('.filter-dropdown-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  event.currentTarget.classList.add('active');
+  
+  // Close dropdown
+  document.getElementById('filterDropdown').classList.remove('show');
+  document.querySelector('.filter-dropdown-container').classList.remove('active');
+  
+  // Update table
+  updatePatientTable(filterType);
+};
 
 // -----------------------------------------------
 // SEARCH FUNCTIONALITY
@@ -139,38 +188,45 @@ function setupSearch() {
 }
 
 // -----------------------------------------------
-// UPDATE PATIENT TABLE (REAL API)
+// UPDATE PATIENT TABLE (REAL API WITH FILTER)
 // -----------------------------------------------
-window.updatePatientTable = async function () {
+window.updatePatientTable = async function (filter = 'no-exam') {
     const tbody = document.querySelector('.patient-table tbody');
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:3rem;color:#a0aec0;">Updating records...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:3rem;color:#a0aec0;">Loading records...</td></tr>`;
 
     try {
-        const res = await fetch('../api/get_patient_records.php');
+        // Pass filter to API
+        const res = await fetch(`../api/get_patient_records.php?filter=${filter}`);
         if (!res.ok) throw new Error("Connection Error");
 
         const records = await res.json();
         tbody.innerHTML = '';
 
         if (!records || records.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:3rem;color:#a0aec0;">No patient records found</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:3rem;color:#a0aec0;">No patient records found</td></tr>`;
             return;
         }
 
         records.forEach(r => {
-            // Build full name from patient data
             const fullName = `${r.firstname} ${r.middlename || ''} ${r.lastname} ${r.suffix || ''}`.trim();
             const age = calculateAge(r.birthdate);
+            
+            // Patient Type Badge
+            const patientTypeBadge = r.patient_type === 'online' 
+                ? '<span class="patient-type-badge badge-online">Online</span>'
+                : '<span class="patient-type-badge badge-walk-in">Walk-in</span>';
 
-            // Updated Minimalist Prescription UI
-            const prescriptionHTML = `
+            // Check if patient has eye exam
+            const hasExam = r.exam_date !== null;
+            
+            const prescriptionHTML = hasExam ? `
                 <div class="prescription-container">
                     <div><span class="prescription-label">OD</span> ${r.od_sph || '—'} / ${r.od_cyl || '—'} <small>x</small>${r.od_axis || '—'}</div>
                     <div><span class="prescription-label">OS</span> ${r.os_sph || '—'} / ${r.os_cyl || '—'} <small>x</small>${r.os_axis || '—'}</div>
                 </div>
-            `;
+            ` : '<span class="patient-type-badge badge-no-exam">No Exam Yet</span>';
 
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -178,6 +234,7 @@ window.updatePatientTable = async function () {
                     <div style="font-weight: 600; color: #1a202c;">${fullName}</div>
                     <div style="font-size: 0.75rem; color: #a0aec0;">ID: #${r.patient_id}</div>
                 </td>
+                <td>${patientTypeBadge}</td>
                 <td style="color: #718096; max-width: 200px;">${r.address || '—'}</td>
                 <td>${age} <span style="font-size: 0.7rem; color: #cbd5e0;">YRS</span></td>
                 <td>${prescriptionHTML}</td>
@@ -193,7 +250,7 @@ window.updatePatientTable = async function () {
 
     } catch (err) {
         console.error('Error loading patient records:', err);
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:3rem;color:#e53e3e;">Unable to sync patient data.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:3rem;color:#e53e3e;">Unable to sync patient data.</td></tr>`;
     }
 };
 

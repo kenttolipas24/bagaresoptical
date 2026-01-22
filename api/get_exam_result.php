@@ -1,23 +1,53 @@
 <?php
 // ==============================================
 // api/get_exam_results.php
-// Fetch all eye examination results
 // ==============================================
 
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-error_reporting(0);
-ini_set('display_errors', 0);
+// CORS Headers
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowed = [
+    'http://localhost',
+    'http://127.0.0.1',
+    'https://bagaresopticalclinic.fwh.is'
+];
 
-$conn = new mysqli("localhost", "root", "", "bagares_system");
+if (in_array($origin, $allowed)) {
+    header("Access-Control-Allow-Origin: $origin");
+}
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Content-Type: application/json");
 
-if ($conn->connect_error) {
-    echo json_encode([]);
+// Preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit;
 }
 
+// 🔥 DB CONNECT (LOCALHOST + INFINITYFREE)
+$isLocal = in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1']);
+
 try {
-    // Query matches your save_eye_exam.php structure
+    if ($isLocal) {
+        // 🏠 LOCALHOST (XAMPP)
+        $conn = new mysqli("localhost", "root", "", "bagares_system");
+    } else {
+        // ☁️ INFINITYFREE
+        $conn = new mysqli(
+            "sql205.infinityfree.com",        
+            "if0_40958657",                  
+            "2xKP5yHV7yP5j",                  
+            "if0_40958657_bagares_system"     
+        );
+    }
+    
+    if ($conn->connect_error) {
+        throw new Exception("Database connection failed: " . $conn->connect_error);
+    }
+    
+    $conn->set_charset("utf8mb4");
+
+    // Query all eye examination results
     $query = "
         SELECT 
             e.exam_id,
@@ -64,9 +94,14 @@ try {
     echo json_encode($examResults);
     
 } catch (Exception $e) {
-    error_log("get_exam_results.php error: " . $e->getMessage());
-    echo json_encode([]);
+    http_response_code(500);
+    echo json_encode([
+        "success" => false,
+        "error" => $e->getMessage()
+    ]);
 }
 
-$conn->close();
+if (isset($conn)) {
+    $conn->close();
+}
 ?>

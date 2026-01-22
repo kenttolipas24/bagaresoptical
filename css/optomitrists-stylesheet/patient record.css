@@ -8,7 +8,9 @@
   overflow-y: auto;
 }
 
-/* Header: Patient + Add Patient button */
+/* ============================================ */
+/* PAGE HEADER */
+/* ============================================ */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -16,40 +18,10 @@
   margin-bottom: 1rem;
 }
 
-/* Patient Records */
-.patient-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
 .page-title {
   font-size: 1.5rem;
   font-weight: bold;
   margin-bottom: 1rem;
-}
-
-/* Patient Section Box */
-.patient-section {
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-/* Header (Title) */
-.patient-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.patient-records-title {
-  font-size: 1.125rem;
-  font-weight: 600;
 }
 
 /* Add Patient Button */
@@ -68,7 +40,144 @@
   background: #1f2937;
 }
 
-/* Search Box */
+/* ============================================ */
+/* PATIENT SECTION BOX */
+/* ============================================ */
+.patient-section {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* ============================================ */
+/* PATIENT HEADER (Title + Actions) */
+/* ============================================ */
+.patient-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.patient-records-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+/* Header Actions Container */
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+/* ============================================ */
+/* FILTER DROPDOWN */
+/* ============================================ */
+.filter-dropdown-container {
+  position: relative;
+}
+
+.filter-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-dropdown-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.filter-icon {
+  width: 1rem;
+  height: 1rem;
+  color: #6b7280;
+}
+
+.dropdown-arrow {
+  width: 1rem;
+  height: 1rem;
+  color: #9ca3af;
+  transition: transform 0.2s ease;
+}
+
+.filter-dropdown-container.active .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* Filter Dropdown Menu */
+.filter-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  min-width: 200px;
+  z-index: 50;
+  display: none;
+  overflow: hidden;
+}
+
+.filter-dropdown-menu.show {
+  display: block;
+}
+
+/* Filter Dropdown Items */
+.filter-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.filter-dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.filter-dropdown-item.active {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.filter-check {
+  width: 1rem;
+  font-weight: bold;
+  visibility: hidden;
+}
+
+.filter-dropdown-item.active .filter-check {
+  visibility: visible;
+}
+
+/* ============================================ */
+/* SEARCH BOX */
+/* ============================================ */
 .search-box {
   position: relative;
   width: 280px;
@@ -101,23 +210,13 @@
   pointer-events: none;
 }
 
-/* Patient Table */
+/* ============================================ */
+/* PATIENT TABLE */
+/* ============================================ */
 .patient-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-}
-
-/* Ensure the prescription cell doesn't look cramped */
-.patient-table td {
-    vertical-align: middle;
-    padding: 1rem 0.75rem;
-}
-
-/* Style for the OD/OS labels */
-.patient-table strong {
-    color: #475569;
-    font-size: 0.75rem;
 }
 
 .patient-table thead {
@@ -136,7 +235,64 @@
   color: #475569;
 }
 
-/* Status badge */
+.patient-table td {
+  vertical-align: middle;
+  padding: 1rem 0.75rem;
+}
+
+.patient-table strong {
+  color: #475569;
+  font-size: 0.75rem;
+}
+
+/* ============================================ */
+/* PATIENT TYPE BADGES */
+/* ============================================ */
+.patient-type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.badge-walk-in {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-online {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-no-exam {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ============================================ */
+/* PRESCRIPTION CONTAINER */
+/* ============================================ */
+.prescription-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.prescription-label {
+  font-weight: 600;
+  color: #475569;
+  margin-right: 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* ============================================ */
+/* STATUS BADGE */
+/* ============================================ */
 .status {
   display: inline-block;
   padding: 0.2rem 0.5rem;
@@ -150,12 +306,13 @@
   color: #fff;
 }
 
-/* Action Button Container */
+/* ============================================ */
+/* ACTION BUTTON & DROPDOWN */
+/* ============================================ */
 .action-btn-container {
   position: relative;
 }
 
-/* Action Button */
 .action-btn {
   background: none;
   border: none;
@@ -221,7 +378,9 @@
   text-align: center;
 }
 
-/* Overlay for closing dropdown */
+/* ============================================ */
+/* OVERLAY */
+/* ============================================ */
 .dropdown-overlay {
   position: fixed;
   top: 0;
@@ -234,4 +393,24 @@
 
 .dropdown-overlay.show {
   display: block;
+}
+
+/* ============================================ */
+/* RESPONSIVE DESIGN */
+/* ============================================ */
+@media (max-width: 768px) {
+  .patient-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .filter-dropdown-btn,
+  .search-box {
+    width: 100%;
+  }
 }
