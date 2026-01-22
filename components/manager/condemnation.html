@@ -8,7 +8,7 @@
         <p class="subtitle">Manage damaged or expired optical products</p>
       </div>
       <button class="btn-primary" id="btnOpenCondemnModal">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
         </svg>
         Condemn Item
@@ -26,61 +26,11 @@
         </select>
       </div>
 
-      <div class="filter-group">
-        <label>Date Range</label>
-        <select id="dateFilter" class="filter-select">
-          <option value="all">All Time</option>
-          <option value="today">Today</option>
-          <option value="week">This Week</option>
-          <option value="month">This Month</option>
-        </select>
-      </div>
-
       <div class="search-group">
-        <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
         </svg>
         <input type="search" id="condemnSearch" placeholder="Search product name or SKU...">
-      </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon red">
-          <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
-          </svg>
-        </div>
-        <div class="stat-details">
-          <p class="stat-label">Total Condemned</p>
-          <h3 class="stat-value" id="totalCondemned">0</h3>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon orange">
-          <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
-          </svg>
-        </div>
-        <div class="stat-details">
-          <p class="stat-label">Total Value Lost</p>
-          <h3 class="stat-value" id="totalValueLost">₱0.00</h3>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon blue">
-          <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-          </svg>
-        </div>
-        <div class="stat-details">
-          <p class="stat-label">This Month</p>
-          <h3 class="stat-value" id="monthlyCondemned">0</h3>
-        </div>
       </div>
     </div>
 
@@ -93,7 +43,7 @@
             <th>Product</th>
             <th>SKU</th>
             <th>Category</th>
-            <th>Quantity</th>
+            <th>Qty</th>
             <th>Unit Price</th>
             <th>Total Loss</th>
             <th>Reason</th>
@@ -101,13 +51,12 @@
           </tr>
         </thead>
         <tbody id="condemnationTableBody">
-          <!-- Data will be inserted here -->
         </tbody>
       </table>
 
-      <div id="emptyState" class="empty-state" style="display: none;">
-        <svg width="64" height="64" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+      <div id="emptyState" class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
         </svg>
         <h3>No condemned items</h3>
         <p>Items marked as damaged or expired will appear here</p>
@@ -116,117 +65,146 @@
 
     <!-- Pagination -->
     <div class="pagination" id="pagination">
-      <button class="page-btn" id="prevPage">Previous</button>
+      <button class="page-btn" id="prevPage" disabled>
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+        </svg>
+        Previous
+      </button>
       <div class="page-numbers" id="pageNumbers"></div>
-      <button class="page-btn" id="nextPage">Next</button>
+      <button class="page-btn" id="nextPage">
+        Next
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+        </svg>
+      </button>
     </div>
 
-  </div>
-
-  <!-- Condemnation Modal -->
-  <div id="condemnationModal" class="modal-overlay">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <h3>Condemn Inventory Item</h3>
-        <button class="close-btn" id="closeCondemnModal">×</button>
-      </div>
-
-      <div class="modal-body">
-        <form id="condemnationForm">
-          
-          <!-- Product Selection -->
-          <div class="form-group">
-            <label>Select Product <span class="required">*</span></label>
-            <button type="button" class="product-dropdown-btn" id="productDropdownBtn">
-              <span id="productDisplay">Select a product...</span>
-              <svg class="dropdown-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-              </svg>
-            </button>
-            <input type="hidden" id="selectedProductId" required>
-          </div>
-
-          <!-- Product Info Display -->
-          <div id="productInfoCard" class="product-info-card" style="display: none;">
-            <div class="info-row">
-              <span class="info-label">SKU:</span>
-              <span id="displaySKU">-</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Category:</span>
-              <span id="displayCategory">-</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Current Stock:</span>
-              <span id="displayStock">-</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Unit Price:</span>
-              <span id="displayPrice">-</span>
-            </div>
-          </div>
-
-          <!-- Quantity -->
-          <div class="form-group">
-            <label>Quantity to Condemn <span class="required">*</span></label>
-            <input type="number" id="condemnQuantity" min="1" placeholder="Enter quantity" required>
-          </div>
-
-          <!-- Reason -->
-          <div class="form-group">
-            <label>Reason for Condemnation <span class="required">*</span></label>
-            <select id="condemnReason" required>
-              <option value="">Select reason...</option>
-              <option value="damaged">Damaged/Broken</option>
-              <option value="expired">Expired</option>
-              <option value="defective">Manufacturing Defect</option>
-              <option value="scratched">Scratched Lenses</option>
-              <option value="bent">Bent Frames</option>
-              <option value="discolored">Discolored</option>
-              <option value="obsolete">Obsolete/Outdated</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <!-- Additional Notes -->
-          <div class="form-group">
-            <label>Additional Notes</label>
-            <textarea id="condemnNotes" rows="3" placeholder="Enter any additional details..."></textarea>
-          </div>
-
-          <!-- Total Loss Display -->
-          <div class="total-loss-display">
-            <span>Estimated Loss:</span>
-            <strong id="estimatedLoss">₱0.00</strong>
-          </div>
-
-        </form>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn-secondary" id="btnCancelCondemn">Cancel</button>
-        <button type="submit" form="condemnationForm" class="btn-danger" id="btnConfirmCondemn">
-          Confirm Condemnation
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Product Selection Modal -->
-  <div id="productSelectionModal" class="modal-overlay">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <h3>Select Product to Condemn</h3>
-        <button class="close-btn" id="closeProductModal">×</button>
-      </div>
-
-      <div class="modal-body">
-        <input type="search" id="productSearch" class="modal-search" placeholder="Search products...">
-        
-        <div class="product-list" id="productList">
-          <!-- Product cards will be inserted here -->
-        </div>
-      </div>
-    </div>
   </div>
 </section>
+
+<!-- ========== CONDEMNATION MODAL ========== -->
+<div id="condemnationModal" class="condemn-overlay">
+  <div class="condemn-modal">
+    <!-- Header -->
+    <div class="condemn-header">
+      <h3>Condemn Inventory Item</h3>
+      <button type="button" class="condemn-close" id="closeCondemnModal">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Scrollable Body -->
+    <div class="condemn-body">
+      <form id="condemnationForm">
+        
+        <!-- Product Selection -->
+        <div class="condemn-field">
+          <label>Select Product <span class="req">*</span></label>
+          <button type="button" class="condemn-select-btn" id="productDropdownBtn">
+            <span id="productDisplay">Select a product...</span>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+          <input type="hidden" id="selectedProductId">
+        </div>
+
+        <!-- Product Info Card -->
+        <div id="productInfoCard" class="condemn-info-card">
+          <div class="info-row">
+            <div class="info-col">
+              <span class="info-label">SKU</span>
+              <span class="info-value" id="displaySKU">-</span>
+            </div>
+            <div class="info-col">
+              <span class="info-label">Category</span>
+              <span class="info-value" id="displayCategory">-</span>
+            </div>
+          </div>
+          <div class="info-row">
+            <div class="info-col">
+              <span class="info-label">Available Stock</span>
+              <span class="info-value stock-value" id="displayStock">-</span>
+            </div>
+            <div class="info-col">
+              <span class="info-label">Unit Price</span>
+              <span class="info-value" id="displayPrice">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quantity -->
+        <div class="condemn-field">
+          <label>Quantity to Condemn <span class="req">*</span></label>
+          <input type="number" id="condemnQuantity" min="1" placeholder="Enter quantity">
+        </div>
+
+        <!-- Reason -->
+        <div class="condemn-field">
+          <label>Reason <span class="req">*</span></label>
+          <select id="condemnReason">
+            <option value="">Select reason...</option>
+            <option value="Damaged">Damaged/Broken</option>
+            <option value="Expired">Expired</option>
+            <option value="Defective">Manufacturing Defect</option>
+            <option value="Scratched">Scratched Lenses</option>
+            <option value="Bent">Bent Frames</option>
+            <option value="Discolored">Discolored</option>
+            <option value="Obsolete">Obsolete/Outdated</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <!-- Notes -->
+        <div class="condemn-field">
+          <label>Notes <span class="optional">(optional)</span></label>
+          <textarea id="condemnNotes" rows="2" placeholder="Additional details..."></textarea>
+        </div>
+
+        <!-- Loss Display -->
+        <div class="condemn-loss">
+          <span>Estimated Loss</span>
+          <strong id="estimatedLoss">₱0.00</strong>
+        </div>
+
+        <!-- Footer -->
+        <div class="condemn-footer">
+          <button type="button" class="btn-cancel" id="btnCancelCondemn">Cancel</button>
+          <button type="submit" class="btn-submit">Confirm Condemnation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ========== PRODUCT SELECTION MODAL ========== -->
+<div id="productSelectionModal" class="condemn-overlay">
+  <div class="condemn-modal condemn-modal-lg">
+    <!-- Header -->
+    <div class="condemn-header">
+      <h3>Select Product</h3>
+      <button type="button" class="condemn-close" id="closeProductModal">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="condemn-body">
+      <div class="condemn-search">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+        </svg>
+        <input type="search" id="productSearch" placeholder="Search by name or SKU...">
+      </div>
+      
+      <div class="condemn-product-list" id="productList">
+        <!-- Products inserted here -->
+      </div>
+    </div>
+  </div>
+</div>
