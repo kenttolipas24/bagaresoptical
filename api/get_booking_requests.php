@@ -1,68 +1,62 @@
 <?php
 header("Content-Type: application/json");
-error_reporting(E_ALL);
-ini_set('display_errors', 0); // ❗ hide errors from breaking JSON
 
 $conn = new mysqli("localhost", "root", "", "bagares_system");
 
 if ($conn->connect_error) {
-    echo json_encode([]); // ✅ ALWAYS ARRAY
+    http_response_code(500);
+    echo json_encode(["error" => "Connection failed"]);
     exit;
 }
 
-$date = $_GET['date'] ?? null;
+$conn->set_charset("utf8mb4");
 
 $sql = "
-SELECT
-    a.appointment_id,
-    a.patient_id,
-    a.appointment_date,
-    a.appointment_time,
-    a.service,
-    a.status,
-    a.created_at,
-    CONCAT(
-        p.firstname, ' ',
-        IFNULL(p.middlename, ''), ' ',
-        p.lastname, ' ',
-        IFNULL(p.suffix, '')
-    ) AS patient_name
-FROM appointment a
-INNER JOIN patient p ON p.patient_id = a.patient_id
-WHERE a.status = 'scheduled'
+    SELECT 
+        pr.id,
+        pr.patient_id,
+        pr.service,
+        pr.appointment_date,
+        pr.appointment_time,
+        pr.status,
+        pr.created_at,
+        CONCAT(
+            p.firstname, ' ',
+            IFNULL(p.middlename, ''), ' ',
+            p.lastname, ' ',
+            IFNULL(p.suffix, '')
+        ) AS patient_name
+    FROM patient_request pr
+    INNER JOIN patient p ON p.patient_id = pr.patient_id
+    WHERE pr.status = 'pending'
+      AND pr.patient_id IS NOT NULL
+    ORDER BY pr.created_at DESC
+    LIMIT 50
 ";
 
-if ($date) {
-    $sql .= " AND a.appointment_date = ?";
+$result = $conn->query($sql);
+
+if (!$result) {
+    echo json_encode(["error" => $conn->error]);
+    exit;
 }
 
-$sql .= " ORDER BY a.appointment_date DESC, a.appointment_time DESC";
-
-$stmt = $conn->prepare($sql);
-
-if ($date) {
-    $stmt->bind_param("s", $date);
-}
-
-$stmt->execute();
-$result = $stmt->get_result();
-
-$appointments = [];
+$requests = [];
 
 while ($row = $result->fetch_assoc()) {
-    $appointments[] = [
-        "appointment_id"   => (int)$row["appointment_id"],
+    $requests[] = [
+        "id"               => (int)$row["id"],
         "patient_id"       => (int)$row["patient_id"],
         "patient_name"     => trim($row["patient_name"]),
         "appointment_date" => $row["appointment_date"],
         "appointment_time" => $row["appointment_time"],
         "service"          => $row["service"],
+        "address"          => "N/A",
         "status"           => $row["status"],
         "created_at"       => $row["created_at"]
     ];
 }
 
-echo json_encode($appointments); // ✅ ALWAYS ARRAY
+echo json_encode($requests);
 
-$stmt->close();
 $conn->close();

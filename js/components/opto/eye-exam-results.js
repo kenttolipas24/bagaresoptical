@@ -1,5 +1,5 @@
 // ================================================
-// EYE EXAMINATION RESULTS - TABLE WITH PAGINATION
+// EYE EXAMINATION RESULTS - TABLE WITH PAGINATION & AUTO-REFRESH
 // ================================================
 
 // Load HTML Component
@@ -11,20 +11,37 @@ fetch('../components/optometrists/eye-exam-results.html')
   })
   .catch(err => console.error('Failed to load eye exam results HTML:', err));
 
-// Pagination state
-let allResults = [];
-let filteredResults = [];
-let currentPage = 1;
-const resultsPerPage = 5;
+// Pagination & Filter state - USE UNIQUE NAMES
+let allExamResults = [];
+let filteredExamResults = [];
+let currentExamPage = 1;
+const examResultsPerPage = 5;
+let currentExamFilter = 'all';     
+let currentExamSearchTerm = '';
+
+// Auto-refresh settings
+let examAutoRefreshInterval = null;
+const EXAM_AUTO_REFRESH_INTERVAL = 8000; // 8 seconds
 
 // ────────────────────────────────────────────────
 // INITIALIZE
 // ────────────────────────────────────────────────
 function initializeExamResults() {
-  loadExamResults();
+  loadExamResults(currentExamFilter, currentExamSearchTerm);
   setupExamSearch();
   setupDateFilter();
+  
+  // Start auto-refresh immediately
+  startAutoRefresh();
 }
+
+// Stop refresh when leaving the page
+window.addEventListener('beforeunload', () => {
+  if (examAutoRefreshInterval) {
+    clearInterval(examAutoRefreshInterval);
+    examAutoRefreshInterval = null;
+  }
+});
 
 // ────────────────────────────────────────────────
 // LOAD EXAM RESULTS FROM API
@@ -33,34 +50,42 @@ async function loadExamResults(filterDate = 'all', searchTerm = '') {
   const tbody = document.getElementById('examResultsBody');
   if (!tbody) return;
 
-  // Show loading state
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="6" class="exam-loading-row">Loading examination results...</td>
-    </tr>
-  `;
+  // Show loading only on first load or manual filter change
+  const isInitialOrFilterChange = !examAutoRefreshInterval || filterDate !== currentExamFilter || searchTerm !== currentExamSearchTerm;
+  if (isInitialOrFilterChange) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="exam-loading-row">Loading examination results...</td>
+      </tr>
+    `;
+  }
 
   try {
     const res = await fetch('../api/get_exam_result.php');
     if (!res.ok) throw new Error('Failed to fetch exam results');
 
-    allResults = await res.json();
+    allExamResults = await res.json();
+    
+    // Update current filter/search state
+    currentExamFilter = filterDate;
+    currentExamSearchTerm = searchTerm.trim();
     
     // Apply filters
-    filteredResults = allResults;
+    filteredExamResults = allExamResults;
     
     if (filterDate !== 'all') {
-      filteredResults = filterByDate(filteredResults, filterDate);
+      filteredExamResults = filterByDate(filteredExamResults, filterDate);
     }
 
-    if (searchTerm) {
-      filteredResults = filterBySearch(filteredResults, searchTerm);
+    if (currentExamSearchTerm) {
+      filteredExamResults = filterBySearch(filteredExamResults, currentExamSearchTerm);
     }
 
-    // Reset to page 1 when filters change
-    currentPage = 1;
+    // Reset pagination only on actual filter/search change
+    if (isInitialOrFilterChange) {
+      currentExamPage = 1;
+    }
     
-    // Render results
     renderTable();
     renderPagination();
 
@@ -85,7 +110,7 @@ function renderTable() {
   const tbody = document.getElementById('examResultsBody');
   if (!tbody) return;
 
-  if (filteredResults.length === 0) {
+  if (filteredExamResults.length === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="6" class="exam-empty-row">
@@ -101,12 +126,10 @@ function renderTable() {
     return;
   }
 
-  // Calculate pagination
-  const startIndex = (currentPage - 1) * resultsPerPage;
-  const endIndex = startIndex + resultsPerPage;
-  const pageResults = filteredResults.slice(startIndex, endIndex);
+  const startIndex = (currentExamPage - 1) * examResultsPerPage;
+  const endIndex = startIndex + examResultsPerPage;
+  const pageResults = filteredExamResults.slice(startIndex, endIndex);
 
-  // Render rows
   tbody.innerHTML = pageResults.map(result => createTableRow(result)).join('');
 }
 
@@ -170,38 +193,29 @@ function createTableRow(result) {
 // RENDER PAGINATION
 // ────────────────────────────────────────────────
 function renderPagination() {
-  const totalPages = Math.ceil(filteredResults.length / resultsPerPage);
-  const startIndex = (currentPage - 1) * resultsPerPage + 1;
-  const endIndex = Math.min(currentPage * resultsPerPage, filteredResults.length);
+  const totalPages = Math.ceil(filteredExamResults.length / examResultsPerPage);
+  const startIndex = (currentExamPage - 1) * examResultsPerPage + 1;
+  const endIndex = Math.min(currentExamPage * examResultsPerPage, filteredExamResults.length);
 
-  // Update info text
   const infoElement = document.getElementById('paginationInfo');
   if (infoElement) {
-    infoElement.textContent = `Showing ${startIndex} to ${endIndex} of ${filteredResults.length} results`;
+    infoElement.textContent = `Showing ${startIndex} to ${endIndex} of ${filteredExamResults.length} results`;
   }
 
-  // Update buttons
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
   
-  if (prevBtn) {
-    prevBtn.disabled = currentPage === 1;
-  }
-  
-  if (nextBtn) {
-    nextBtn.disabled = currentPage === totalPages || totalPages === 0;
-  }
+  if (prevBtn) prevBtn.disabled = currentExamPage === 1;
+  if (nextBtn) nextBtn.disabled = currentExamPage === totalPages || totalPages === 0;
 
-  // Render page numbers
   const pageNumbersContainer = document.getElementById('pageNumbers');
   if (!pageNumbersContainer) return;
 
   pageNumbersContainer.innerHTML = '';
-  
+
   if (totalPages <= 1) return;
 
-  // Show max 5 page numbers
-  let startPage = Math.max(1, currentPage - 2);
+  let startPage = Math.max(1, currentExamPage - 2);
   let endPage = Math.min(totalPages, startPage + 4);
   
   if (endPage - startPage < 4) {
@@ -210,7 +224,7 @@ function renderPagination() {
 
   for (let i = startPage; i <= endPage; i++) {
     const pageBtn = document.createElement('button');
-    pageBtn.className = `exam-page-number ${i === currentPage ? 'active' : ''}`;
+    pageBtn.className = `exam-page-number ${i === currentExamPage ? 'active' : ''}`;
     pageBtn.textContent = i;
     pageBtn.onclick = () => goToPage(i);
     pageNumbersContainer.appendChild(pageBtn);
@@ -221,34 +235,33 @@ function renderPagination() {
 // PAGINATION CONTROLS
 // ────────────────────────────────────────────────
 function goToPage(page) {
-  currentPage = page;
+  currentExamPage = page;
   renderTable();
   renderPagination();
 }
 
 function previousPage() {
-  if (currentPage > 1) {
-    currentPage--;
+  if (currentExamPage > 1) {
+    currentExamPage--;
     renderTable();
     renderPagination();
   }
 }
 
 function nextPage() {
-  const totalPages = Math.ceil(filteredResults.length / resultsPerPage);
-  if (currentPage < totalPages) {
-    currentPage++;
+  const totalPages = Math.ceil(filteredExamResults.length / examResultsPerPage);
+  if (currentExamPage < totalPages) {
+    currentExamPage++;
     renderTable();
     renderPagination();
   }
 }
 
-// Make functions global
 window.previousPage = previousPage;
 window.nextPage = nextPage;
 
 // ────────────────────────────────────────────────
-// SEARCH FUNCTIONALITY
+// SEARCH & FILTER SETUP
 // ────────────────────────────────────────────────
 function setupExamSearch() {
   const searchInput = document.querySelector('.exam-search-input');
@@ -258,23 +271,19 @@ function setupExamSearch() {
   searchInput.addEventListener('input', (e) => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-      const searchTerm = e.target.value.toLowerCase();
-      const filterDate = document.getElementById('dateFilter')?.value || 'all';
-      loadExamResults(filterDate, searchTerm);
+      currentExamSearchTerm = e.target.value.trim();
+      loadExamResults(currentExamFilter, currentExamSearchTerm);
     }, 300);
   });
 }
 
-// ────────────────────────────────────────────────
-// DATE FILTER
-// ────────────────────────────────────────────────
 function setupDateFilter() {
   const dateFilter = document.getElementById('dateFilter');
   if (!dateFilter) return;
 
   dateFilter.addEventListener('change', (e) => {
-    const searchTerm = document.querySelector('.exam-search-input')?.value || '';
-    loadExamResults(e.target.value, searchTerm);
+    currentExamFilter = e.target.value;
+    loadExamResults(currentExamFilter, currentExamSearchTerm);
   });
 }
 
@@ -290,7 +299,7 @@ function filterByDate(results, filter) {
     
     switch(filter) {
       case 'today':
-        return examDate >= today;
+        return examDate.toDateString() === today.toDateString();
       case 'week':
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
@@ -310,10 +319,12 @@ function filterByDate(results, filter) {
 }
 
 function filterBySearch(results, searchTerm) {
+  if (!searchTerm) return results;
+  const term = searchTerm.toLowerCase();
   return results.filter(result => {
     const patientName = `${result.firstname} ${result.middlename || ''} ${result.lastname}`.toLowerCase();
     const patientId = `#${result.patient_id}`;
-    return patientName.includes(searchTerm) || patientId.includes(searchTerm);
+    return patientName.includes(term) || patientId.includes(term);
   });
 }
 
@@ -329,3 +340,12 @@ function formatDate(dateStr) {
     day: 'numeric' 
   });
 }
+
+// ────────────────────────────────────────────────
+// CLEANUP
+// ────────────────────────────────────────────────
+window.addEventListener('beforeunload', () => {
+  if (examAutoRefreshInterval) {
+    clearInterval(examAutoRefreshInterval);
+  }
+});

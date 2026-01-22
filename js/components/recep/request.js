@@ -104,8 +104,6 @@ function renderRequests() {
   `).join('');
 }
 
-
-
 /* ===============================
    SEARCH
 ================================ */
@@ -119,7 +117,7 @@ function setupSearch() {
     requestsData = term === ''
       ? allRequestsData
       : allRequestsData.filter(r =>
-          `${r.firstname} ${r.lastname}`.toLowerCase().includes(term) ||
+          (r.patient_name || '').toLowerCase().includes(term) ||
           (r.service || '').toLowerCase().includes(term) ||
           (r.address || '').toLowerCase().includes(term)
         );
@@ -157,17 +155,23 @@ function closeActionDropdown() {
 ================================ */
 function openConfirmModal() {
   closeActionDropdown();
+
   const req = allRequestsData.find(r => r.id == selectedRequestId);
   if (!req) return;
 
   document.getElementById('confirmModalBody').innerHTML = `
-    <p><b>Patient:</b> ${req.firstname} ${req.lastname}</p>
-    <p><b>Service:</b> ${req.service}</p>
-    <p><b>Date & Time:</b> ${formatDate(req.date)} ${formatTime(req.time)}</p>
+    <p><b>Patient:</b> ${req.patient_name || '—'}</p>
+    <p><b>Service:</b> ${req.service || '—'}</p>
+    <p><b>Date & Time:</b>
+      ${formatDate(req.appointment_date)}
+      ${formatTime(req.appointment_time)}
+    </p>
+    <p><b>Address:</b> ${req.address || 'N/A'}</p>
   `;
 
   document.getElementById('confirmModal').classList.add('show');
 }
+
 
 function closeConfirmModal() {
   document.getElementById('confirmModal')?.classList.remove('show');
@@ -189,6 +193,10 @@ function confirmAppointment() {
       renderRequests();
       closeConfirmModal();
       alert('✅ Appointment confirmed');
+      // Refresh appointments if the function is available (cross-tab update)
+      if (typeof window.refreshAppointments === 'function') {
+        window.refreshAppointments();
+      }
     }
   });
 }

@@ -63,47 +63,96 @@ window.prevStep = function() {
 };
 
 // ===============================
-// Validate Current Step
+// Validate Current Step (Phone is now OPTIONAL)
 // ===============================
 function validateStep(step) {
   if (step === 1) {
     const service = document.querySelector('input[name="service"]:checked');
-    const date = document.getElementById('date').value;
-    const time = document.getElementById('time').value;
+    const date = document.getElementById('date')?.value;
+    const time = document.getElementById('time')?.value;
     
     if (!service || !date || !time) {
-      alert('Please fill in all fields');
+      alert('Please select a service, date, and time');
       return false;
     }
+    return true;
   }
   
   if (step === 2) {
-    const firstname = document.getElementById('firstname').value.trim();
-    const lastname = document.getElementById('lastname').value.trim();
-    const address = document.getElementById('address').value.trim();
-    const birthdate = document.getElementById('birthdate').value;
-    const phone = document.getElementById('phone').value.trim();
-    const email = document.getElementById('email').value.trim();
-    
-    if (!firstname || !lastname || !address || !birthdate || !phone || !email) {
-      alert('Please fill in all required fields');
+    const firstname = document.getElementById('firstname')?.value.trim();
+    const lastname  = document.getElementById('lastname')?.value.trim();
+    const address   = document.getElementById('address')?.value.trim();
+    const birthdate = document.getElementById('birthdate')?.value;
+    const email     = document.getElementById('email')?.value.trim();
+    const phone     = document.getElementById('phone')?.value.trim(); // optional
+
+    // Required fields (phone removed from required check)
+    if (!firstname || !lastname || !address || !birthdate || !email) {
+      alert('Please fill in all required fields (phone is optional)');
       return false;
     }
     
+    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       alert('Please enter a valid email address');
       return false;
     }
     
-    const phoneRegex = /^09\d{9}$/;
-    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
-      alert('Please enter a valid phone number (09XXXXXXXXX)');
-      return false;
+    // Phone validation ONLY if filled (optional)
+    if (phone !== '') {
+      const phoneRegex = /^09\d{9}$/;
+      const cleanPhone = phone.replace(/\s/g, '');
+      if (!phoneRegex.test(cleanPhone)) {
+        alert('Phone number (if provided) must start with 09 and be 11 digits (e.g., 09123456789)');
+        return false;
+      }
     }
+    
+    return true;
   }
   
   return true;
+}
+
+// ===============================
+// Next Step (updated to store optional phone)
+// ===============================
+function nextStep(step) {
+  // Run validation BEFORE proceeding
+  if (!validateStep(currentStep)) {
+    return;
+  }
+
+  // Store data only when moving forward
+  if (currentStep === 1 && step === 2) {
+    bookingData.service = document.querySelector('input[name="service"]:checked')?.value;
+    bookingData.date    = document.getElementById('date')?.value;
+    bookingData.time    = document.getElementById('time')?.value;
+  }
+
+  if (currentStep === 2 && step === 3) {
+    bookingData.firstname  = document.getElementById('firstname')?.value.trim();
+    bookingData.middlename = document.getElementById('middlename')?.value.trim() || '';
+    bookingData.lastname   = document.getElementById('lastname')?.value.trim();
+    bookingData.suffix     = document.getElementById('suffix')?.value.trim() || '';
+    bookingData.address    = document.getElementById('address')?.value.trim();
+    bookingData.birthdate  = document.getElementById('birthdate')?.value;
+    bookingData.email      = document.getElementById('email')?.value.trim();
+    bookingData.phone      = document.getElementById('phone')?.value.trim() || null; // optional
+
+    bookingData.fullname = `${bookingData.firstname} ${bookingData.middlename} ${bookingData.lastname}`;
+    if (bookingData.suffix) bookingData.fullname += ` ${bookingData.suffix}`;
+
+    generateConfirmation();
+  }
+
+  // Hide current, show next
+  document.getElementById(`step-${currentStep}`)?.classList.add('hidden');
+  document.getElementById(`step-${step}`)?.classList.remove('hidden');
+  
+  currentStep = step;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ===============================

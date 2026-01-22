@@ -1,109 +1,85 @@
 <?php
 header("Content-Type: application/json");
-error_reporting(0);
-ini_set('display_errors', 0);
+
+$conn = new mysqli("localhost", "root", "", "bagares_system");
+
+if ($conn->connect_error) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => "Connection failed"]);
+    exit;
+}
+
+$conn->set_charset("utf8mb4");
+
+$input = json_decode(file_get_contents("php://input"), true);
+
+if (!$input) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "error" => "Invalid JSON"]);
+    exit;
+}
+
+// Required fields
+$required = ['service', 'date', 'time', 'firstname', 'lastname', 'address', 'birthdate', 'phone', 'email'];
+foreach ($required as $field) {
+    if (empty(trim($input[$field] ?? ''))) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "error" => "Missing field: $field"]);
+        exit;
+    }
+}
+
+$conn->begin_transaction();
 
 try {
-    $conn = new mysqli("localhost", "root", "", "bagares_system");
-    
-    if ($conn->connect_error) {
-        throw new Exception("Database connection failed");
-    }
-    
-    $conn->set_charset("utf8mb4");
-    
-    $input = json_decode(file_get_contents("php://input"), true);
-    if (!$input) throw new Exception("Invalid JSON");
+    // Find or create patient
+    $stmt = $conn->prepare("SELECT patient_id FROM patient WHERE email = ? OR phone = ? LIMIT 1");
+    $stmt->bind_param("ss", $input['email'], $input['phone']);
+    $stmt->execute();
+    $res = $stmt->get_result();
 
-    $required = ['service','date','time','firstname','lastname','address','birthdate','phone','email'];
-    foreach ($required as $f) {
-        if (empty($input[$f])) throw new Exception("Missing: $f");
-    }
-
-    $conn->begin_transaction();
-    
-    try {
-        // Check if patient exists
-        $checkStmt = $conn->prepare("
-            SELECT patient_id 
-            FROM patient 
-            WHERE email = ? OR phone = ?
+    if ($row = $res->fetch_assoc()) {
+        $patient_id = $row['patient_id'];
+    } else {
+        $stmt = $conn->prepare("
+            INSERT INTO patient 
+            (firstname, middlename, lastname, suffix, address, birthdate, phone, email, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
-        
-        $checkStmt->bind_param("ss", $input['email'], $input['phone']);
-        $checkStmt->execute();
-        $result = $checkStmt->get_result();
-        $existing = $result->fetch_assoc();
-        $checkStmt->close();
-        
-        if ($existing) {
-            // Update existing patient to 'online'
-            $patient_id = $existing['patient_id'];
-            $updateStmt = $conn->prepare("UPDATE patient SET patient_type = 'online' WHERE patient_id = ?");
-            $updateStmt->bind_param("i", $patient_id);
-            $updateStmt->execute();
-            $updateStmt->close();
-        } else {
-            // Create new patient with patient_type = 'online'
-            $patientStmt = $conn->prepare("
-                INSERT INTO patient 
-                (firstname, middlename, lastname, suffix, address, birthdate, phone, email, patient_type, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'online', NOW())
-            ");
-            
-            $patientStmt->bind_param(
-                "ssssssss",
-                $input['firstname'],
-                $input['middlename'],
-                $input['lastname'],
-                $input['suffix'],
-                $input['address'],
-                $input['birthdate'],
-                $input['phone'],
-                $input['email']
-            );
-            
-            $patientStmt->execute();
-            $patient_id = $conn->insert_id;
-            $patientStmt->close();
-        }
-        
-        // Create appointment
-        $apptStmt = $conn->prepare("
-            INSERT INTO appointment
-            (patient_id, appointment_date, appointment_time, service, status, created_at)
-            VALUES (?, ?, ?, ?, 'scheduled', NOW())
-        ");
-        
-        $apptStmt->bind_param(
-            "isss",
-            $patient_id,
-            $input['date'],
-            $input['time'],
-            $input['service']
+        $middlename = $input['middlename'] ?? null;
+        $suffix = $input['suffix'] ?? null;
+        $stmt->bind_param("ssssssss",
+            $input['firstname'], $middlename, $input['lastname'], $suffix,
+            $input['address'], $input['birthdate'], $input['phone'], $input['email']
         );
-        
-        $apptStmt->execute();
-        $appointment_id = $apptStmt->insert_id;
-        $apptStmt->close();
-        
-        $conn->commit();
-        
-        echo json_encode([
-            "success" => true,
-            "patient_id" => $patient_id,
-            "appointment_id" => $appointment_id
-        ]);
-        
-    } catch (Exception $e) {
-        $conn->rollback();
-        throw $e;
+        $stmt->execute();
+        $patient_id = $conn->insert_id;
     }
-    
-    $conn->close();
-    
+    $stmt->close();
+
+    // Create request
+    $stmt = $conn->prepare("
+        INSERT INTO patient_request 
+        (patient_id, service, appointment_date, appointment_time, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'pending', NOW(), NOW())
+    ");
+    $stmt->bind_param("isss", $patient_id, $input['service'], $input['date'], $input['time']);
+    $stmt->execute();
+    $request_id = $conn->insert_id;
+    $stmt->close();
+
+    $conn->commit();
+
+    echo json_encode([
+        "success" => true,
+        "message" => "Request submitted",
+        "request_id" => $request_id
+    ]);
+
 } catch (Exception $e) {
+    $conn->rollback();
     http_response_code(500);
     echo json_encode(["success" => false, "error" => $e->getMessage()]);
 }
-?>
+
+$conn->close();
