@@ -31,8 +31,6 @@ function initializeExamResults() {
   setupExamSearch();
   setupDateFilter();
   
-  // Start auto-refresh immediately
-  startAutoRefresh();
 }
 
 // Stop refresh when leaving the page
