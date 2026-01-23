@@ -41,11 +41,6 @@ function initializeReports() {
     });
 
     initializeLiveSearch();
-
-    // Custom report button placeholder
-    document.querySelector('.generate-btn')?.addEventListener('click', () => {
-        alert("Custom Report Generator – coming soon!\n\nYou will be able to:\n• Select date ranges\n• Combine multiple report types\n• Choose export format");
-    });
 }
 
 // ────────────────────────────────────────────────
