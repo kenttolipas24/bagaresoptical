@@ -2,33 +2,39 @@
 fetch('../components/modals/optometrist/eye-exam-modal.html')
   .then(res => res.text())
   .then(data => {
-    document.getElementById('eye-exam-modal-placeholder').innerHTML = data;
+    const placeholder = document.getElementById('eye-exam-modal-placeholder');
+    if (placeholder) {
+      placeholder.innerHTML = data;
+      console.log('✅ Eye exam modal HTML loaded');
+    } else {
+      console.error('❌ Placeholder #eye-exam-modal-placeholder not found');
+    }
   })
   .catch(error => {
-    console.error('Error loading eye exam modal:', error);
+    console.error('❌ Error loading eye exam modal:', error);
   });
 
-// Global variable to store current appointment ID
+// Global variable to store current patient/appointment ID
 let currentExamAppointmentId = null;
 
-// Function to open eye exam modal - MAKE IT GLOBAL
-window.openEyeExamModal = function(appointmentId) {
-  currentExamAppointmentId = appointmentId;
+// Function to open eye exam modal - accepts patient_id or appointment_id
+window.openEyeExamModal = function(id) {
+  currentExamAppointmentId = id;
   const modal = document.getElementById('eye-exam-modal');
   
   if (!modal) {
-    console.error('Eye exam modal not found');
+    console.error('❌ Eye exam modal not found');
     return;
   }
 
-  console.log('🔍 Opening eye exam for appointment ID:', appointmentId);
+  console.log('🔍 Opening eye exam for ID:', id);
 
   // Show modal FIRST
   modal.classList.add('active');
   document.body.style.overflow = 'hidden';
 
-  // Fetch appointment details
-  fetch(`../api/get_appointment_details.php?id=${appointmentId}`)
+  // Fetch patient details
+  fetch(`../api/get_appointment_details.php?id=${id}`)
     .then(res => {
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -36,28 +42,36 @@ window.openEyeExamModal = function(appointmentId) {
       return res.json();
     })
     .then(data => {
-      if (data.error) {
-        throw new Error(data.message);
+      console.log('📦 Full response:', data);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to load patient data');
       }
       
-      console.log('✅ Patient data received:', data);
+      console.log('✅ Patient data received successfully');
       
-      // Populate patient information with error checking
-      const setTextContent = (id, value) => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.textContent = value || '-';
-          console.log(`✅ Set ${id}:`, value || '-');
+      // Populate patient information with slight delay to ensure DOM is ready
+      setTimeout(() => {
+        const nameEl = document.getElementById('patientName');
+        const ageEl = document.getElementById('patientAge');
+        const bdayEl = document.getElementById('patientBirthdate');
+        const emailEl = document.getElementById('patientEmail');
+        const addrEl = document.getElementById('patientAddress');
+        
+        if (nameEl) {
+          nameEl.textContent = data.patient_name || '-';
+          console.log('✅ Set patientName:', data.patient_name);
         } else {
-          console.error(`❌ Element not found: ${id}`);
+          console.error('❌ patientName element not found!');
         }
-      };
-
-      setTextContent('patientName', data.patient_name);
-      setTextContent('patientAge', data.age ? `${data.age} years old` : '-');
-      setTextContent('patientBirthdate', data.birthdate);
-      setTextContent('patientEmail', data.email);
-      setTextContent('patientAddress', data.address);
+        
+        if (ageEl) ageEl.textContent = data.age ? `${data.age} years old` : '-';
+        if (bdayEl) bdayEl.textContent = data.birthdate || '-';
+        if (emailEl) emailEl.textContent = data.email || '-';
+        if (addrEl) addrEl.textContent = data.address || '-';
+        
+        console.log('✅ All patient info populated');
+      }, 100);
 
       // Set today's date as default for exam date
       const dateInput = document.getElementById('examDate');
@@ -67,19 +81,32 @@ window.openEyeExamModal = function(appointmentId) {
       }
 
       // Check if there's existing exam data
-      if (data.exam_data) {
+      if (data.has_exam && data.exam_data) {
         console.log('📋 Found existing exam data, populating...');
         populateExamData(data.exam_data);
+      } else {
+        console.log('ℹ️ No existing exam data');
       }
     })
     .catch(error => {
-      console.error('❌ Error loading appointment details:', error);
+      console.error('❌ Error loading patient details:', error);
       alert('Error loading patient information: ' + error.message);
     });
 }
 
 // Function to populate existing exam data
 function populateExamData(examData) {
+  console.log('📝 Populating exam data:', examData);
+  
+  // Exam date
+  if (examData.exam_date) {
+    const dateInput = document.getElementById('examDate');
+    if (dateInput) {
+      const examDate = new Date(examData.exam_date);
+      dateInput.value = examDate.toISOString().split('T')[0];
+    }
+  }
+
   // Refraction data
   if (examData.od_sph) document.getElementById('od_sph').value = examData.od_sph;
   if (examData.od_cyl) document.getElementById('od_cyl').value = examData.od_cyl;
@@ -91,23 +118,9 @@ function populateExamData(examData) {
   if (examData.os_add) document.getElementById('os_add').value = examData.os_add;
   if (examData.pd) document.getElementById('pd').value = examData.pd;
 
-  // Visual acuity
-  if (examData.va_dist_od) document.getElementById('va_dist_od').value = examData.va_dist_od;
-  if (examData.va_dist_os) document.getElementById('va_dist_os').value = examData.va_dist_os;
-  if (examData.va_near_od) document.getElementById('va_near_od').value = examData.va_near_od;
-  if (examData.va_near_os) document.getElementById('va_near_os').value = examData.va_near_os;
-
   // Lens recommendation
   if (examData.lens_type) document.getElementById('lensType').value = examData.lens_type;
   if (examData.lens_material) document.getElementById('lensMaterial').value = examData.lens_material;
-
-  // Coatings
-  if (examData.coatings) {
-    const coatings = examData.coatings.split(',');
-    if (coatings.includes('Anti-Reflective')) document.getElementById('coating_ar').checked = true;
-    if (coatings.includes('Blue Light Filter')) document.getElementById('coating_blue').checked = true;
-    if (coatings.includes('Photochromic')) document.getElementById('coating_photo').checked = true;
-  }
 
   // Notes
   if (examData.notes) document.getElementById('examNotes').value = examData.notes;
@@ -141,39 +154,41 @@ function resetExamForm() {
 // Function to save eye examination
 window.saveEyeExam = function() {
   if (!currentExamAppointmentId) {
-    alert('No appointment selected');
+    alert('No patient selected');
     return;
   }
 
   const examData = {
-    appointment_id: currentExamAppointmentId,
+    patient_id: currentExamAppointmentId, // This is the patient ID
     exam_date: document.getElementById('examDate').value,
 
     // Refraction
-    od_sph: document.getElementById('od_sph').value,
-    od_cyl: document.getElementById('od_cyl').value,
-    od_axis: document.getElementById('od_axis').value,
-    od_add: document.getElementById('od_add').value,
+    od_sph: document.getElementById('od_sph').value || null,
+    od_cyl: document.getElementById('od_cyl').value || null,
+    od_axis: document.getElementById('od_axis').value || null,
+    od_add: document.getElementById('od_add').value || null,
 
-    os_sph: document.getElementById('os_sph').value,
-    os_cyl: document.getElementById('os_cyl').value,
-    os_axis: document.getElementById('os_axis').value,
-    os_add: document.getElementById('os_add').value,
+    os_sph: document.getElementById('os_sph').value || null,
+    os_cyl: document.getElementById('os_cyl').value || null,
+    os_axis: document.getElementById('os_axis').value || null,
+    os_add: document.getElementById('os_add').value || null,
 
-    pd: document.getElementById('pd').value,
+    pd: document.getElementById('pd').value || null,
 
     // Lens Recommendation
-    lens_type: document.getElementById('lensType').value,
-    lens_material: document.getElementById('lensMaterial').value,
+    lens_type: document.getElementById('lensType').value || null,
+    lens_material: document.getElementById('lensMaterial').value || null,
 
     // Notes
-    notes: document.getElementById('examNotes').value
+    notes: document.getElementById('examNotes').value || null
   };
 
   if (!examData.exam_date) {
     alert('Please select exam date');
     return;
   }
+
+  console.log('💾 Saving exam data:', examData);
 
   fetch('../api/save_eye_exam.php', {
     method: 'POST',
@@ -182,28 +197,24 @@ window.saveEyeExam = function() {
   })
   .then(res => res.json())
   .then(data => {
+    console.log('📤 Save response:', data);
     if (data.success) {
       alert('Eye examination saved successfully!');
       closeEyeExamModal();
+      
+      // Refresh table if function exists
+      if (typeof updatePatientTable === 'function') {
+        updatePatientTable();
+      }
     } else {
       alert('Error saving examination: ' + (data.message || 'Unknown error'));
     }
   })
   .catch(error => {
-    console.error('Error saving eye exam:', error);
+    console.error('❌ Error saving eye exam:', error);
     alert('Error saving examination. Please try again.');
   });
 };
-
-
-// Helper function to get selected coatings
-function getSelectedCoatings() {
-  const coatings = [];
-  if (document.getElementById('coating_ar').checked) coatings.push('Anti-Reflective');
-  if (document.getElementById('coating_blue').checked) coatings.push('Blue Light Filter');
-  if (document.getElementById('coating_photo').checked) coatings.push('Photochromic');
-  return coatings.join(',');
-}
 
 // Close modal when clicking outside
 window.addEventListener('click', function(event) {
