@@ -1,54 +1,72 @@
 <?php
-// header('Content-Type: application/json');
-
-// $pdo = new PDO(
-//     "mysql:host=localhost;dbname=bagares_system;charset=utf8mb4",
-//     "root",
-//     "",
-//     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-// );
-
-// $stmt = $pdo->query("
-//     SELECT 
-//         inventory_id,
-//         product_name,
-//         sku,
-//         category,
-//         price,
-//         stock
-//     FROM inventory
-// ");
-
-// $stmt = $pdo->query("
-//     SELECT 
-//         inventory_id,
-//         type,
-//         quantity,
-//         reason,
-//         created_at
-//     FROM inventory
-// ");
-
-// echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+// ================================================
+// get_stock_history.php - CLEAN & CONSISTENT
+// ================================================
 
 header('Content-Type: application/json');
-$host = 'localhost';
-$dbname = 'bagares_system';
-$username = 'root';
-$password = '';
+header('Access-Control-Allow-Origin: *');
+
+// Development only - comment out later
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
-    
-    $inventory_id = $_GET['inventory_id'] ?? 0;
+    $host     = 'localhost';
+    $dbname   = 'bagares_system';
+    $username = 'root';
+    $password = '';
 
-    $stmt = $pdo->prepare("SELECT type, quantity, reason, created_at FROM stocks_history WHERE inventory_id = :id ORDER BY created_at DESC");
+    $pdo = new PDO(
+        "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
+        $username,
+        $password,
+        [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ]
+    );
+
+    $inventory_id = filter_input(INPUT_GET, 'inventory_id', FILTER_VALIDATE_INT);
+
+    if ($inventory_id === false || $inventory_id <= 0) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Invalid or missing inventory_id'
+        ]);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT 
+            type,
+            quantity,
+            reason,
+            created_at
+        FROM stocks_history
+        WHERE inventory_id = :id
+        ORDER BY created_at DESC
+    ");
+
     $stmt->execute(['id' => $inventory_id]);
-    $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $history = $stmt->fetchAll();
 
-    echo json_encode($history);
+    echo json_encode([
+        'success' => true,
+        'data'    => $history
+    ]);
+
 } catch (PDOException $e) {
-    echo json_encode([]);
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Database error: ' . $e->getMessage()
+    ]);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error'   => $e->getMessage()
+    ]);
 }
-
-?>

@@ -188,50 +188,54 @@ function populateStockHistory(product) {
     }
 
     fetch(`../api/get_stock_history.php?inventory_id=${product.inventory_id}`)
-        .then(res => res.json())
-        .then(data => {
-            if (!Array.isArray(data) || data.length === 0) {
-                historyBody.innerHTML = `
-                    <tr class="empty-state">
-                        <td colspan="4">No stock movement history available</td>
-                    </tr>
-                `;
-                return;
-            }
+    .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+    })
+    .then(response => {
+        if (!response.success) {
+            throw new Error(response.error || 'Failed to load history');
+        }
 
-            historyBody.innerHTML = data.map(entry => {
-                const typeClass = entry.type === 'Stock In' ? 'stock-in' : 'stock-out';
-                const quantityDisplay =
-                    entry.type === 'Stock In'
-                        ? `+${entry.quantity}`
-                        : `-${Math.abs(entry.quantity)}`;
+        const data = response.data || [];
 
-                const dateDisplay = entry.created_at
-                    ? entry.created_at.split(' ')[0]
-                    : '—';
-
-                return `
-                    <tr>
-                        <td>${dateDisplay}</td>
-                        <td>
-                            <span class="stock-type ${typeClass}">
-                                ${entry.type}
-                            </span>
-                        </td>
-                        <td>${quantityDisplay}</td>
-                        <td>${entry.reason || '—'}</td>
-                    </tr>
-                `;
-            }).join('');
-        })
-        .catch(err => {
-            console.error(err);
+        if (data.length === 0) {
             historyBody.innerHTML = `
                 <tr class="empty-state">
-                    <td colspan="4">Failed to load stock history</td>
+                    <td colspan="4">No stock movement history available</td>
                 </tr>
             `;
-        });
+            return;
+        }
+
+        historyBody.innerHTML = data.map(entry => {
+            const typeClass = entry.type.includes('In') ? 'stock-in' : 'stock-out';
+            const quantityDisplay = entry.quantity > 0 
+                ? `+${entry.quantity}` 
+                : `${entry.quantity}`;
+
+            const dateDisplay = entry.created_at 
+                ? entry.created_at.split(' ')[0] 
+                : '—';
+
+            return `
+                <tr>
+                    <td>${dateDisplay}</td>
+                    <td><span class="stock-type ${typeClass}">${entry.type}</span></td>
+                    <td>${quantityDisplay}</td>
+                    <td>${entry.reason || '—'}</td>
+                </tr>
+            `;
+        }).join('');
+    })
+    .catch(err => {
+        console.error('Stock history error:', err);
+        historyBody.innerHTML = `
+            <tr class="empty-state">
+                <td colspan="4">Failed to load stock history</td>
+            </tr>
+        `;
+    });
 }
 
 
