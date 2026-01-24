@@ -26,44 +26,69 @@ fetch('../components/receptionist/request.html')
 /* ===============================
    LOAD REQUESTS (SAFE + SMART)
 ================================ */
-function loadRequests(isAutoRefresh = false) {
-  fetch('../api/get_booking_requests.php')
-    .then(res => res.json())
-    .then(data => {
-      if (!Array.isArray(data)) {
-        console.warn('⚠️ Request API did not return array');
-        return;
-      }
+async function loadRequests(isAutoRefresh = false) {
+  try {
+    const res = await fetch('/bagares/api/get_booking_requests.php');
+    
+    // Check if response is ok
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    
+    // Get raw text first to debug
+    const text = await res.text();
+    
+    // Try to parse JSON
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      console.error('❌ JSON Parse Error. Raw response:', text);
+      throw new Error('Server returned invalid JSON');
+    }
+    
+    // Handle error response
+    if (data.error || data.success === false) {
+      console.error('❌ API Error:', data.error);
+      return;
+    }
+    
+    if (!Array.isArray(data)) {
+      console.warn('⚠️ Request API did not return array');
+      return;
+    }
 
-      // First load
-      if (isInitialLoad) {
-        allRequestsData = data;
-        requestsData = data;
-        lastRequestId = data.length ? data[0].id : null;
-        renderRequests();
-        setupSearch();
-        isInitialLoad = false;
-        return;
-      }
+    // First load
+    if (isInitialLoad) {
+      allRequestsData = data;
+      requestsData = data;
+      lastRequestId = data.length ? data[0].id : null;
+      renderRequests();
+      setupSearch();
+      isInitialLoad = false;
+      return;
+    }
 
-      // Auto-refresh: detect new booking
-      const newestId = data.length ? data[0].id : null;
-      if (newestId && newestId !== lastRequestId) {
-        console.log('🆕 New booking detected');
-        lastRequestId = newestId;
-        allRequestsData = data;
-        requestsData = data;
-        renderRequests();
-      }
+    // Auto-refresh: detect new booking
+    const newestId = data.length ? data[0].id : null;
+    if (newestId && newestId !== lastRequestId) {
+      console.log('🆕 New booking detected');
+      lastRequestId = newestId;
+      allRequestsData = data;
+      requestsData = data;
+      renderRequests();
+    }
 
-      // Manual reload
-      if (!isAutoRefresh) {
-        allRequestsData = data;
-        requestsData = data;
-        renderRequests();
-      }
-    })
-    .catch(err => console.error('❌ Load request error:', err));
+    // Manual reload
+    if (!isAutoRefresh) {
+      allRequestsData = data;
+      requestsData = data;
+      renderRequests();
+    }
+    
+  } catch (err) {
+    console.error('❌ Load request error:', err);
+  }
 }
 
 /* ===============================
@@ -172,33 +197,51 @@ function openConfirmModal() {
   document.getElementById('confirmModal').classList.add('show');
 }
 
-
 function closeConfirmModal() {
   document.getElementById('confirmModal')?.classList.remove('show');
 }
 
-function confirmAppointment() {
+async function confirmAppointment() {
   if (!selectedRequestId) return;
 
-  fetch('../api/confirm_booking.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ request_id: selectedRequestId })
-  })
-  .then(res => res.json())
-  .then(data => {
+  try {
+    const res = await fetch('../api/confirm_booking.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request_id: selectedRequestId })
+    });
+
+    // Get raw text first
+    const text = await res.text();
+    
+    // Try to parse JSON
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      console.error('❌ Confirm Parse Error. Raw response:', text);
+      throw new Error('Server returned invalid JSON');
+    }
+
     if (data.success) {
       allRequestsData = allRequestsData.filter(r => r.id != selectedRequestId);
       requestsData = allRequestsData;
       renderRequests();
       closeConfirmModal();
-      alert('✅ Appointment confirmed');
-      // Refresh appointments if the function is available (cross-tab update)
+      alert('✅ Appointment confirmed successfully');
+      
+      // Refresh appointments if the function is available
       if (typeof window.refreshAppointments === 'function') {
         window.refreshAppointments();
       }
+    } else {
+      throw new Error(data.error || 'Confirmation failed');
     }
-  });
+    
+  } catch (err) {
+    console.error('❌ Confirm error:', err);
+    alert('❌ Error: ' + err.message);
+  }
 }
 
 /* ===============================
@@ -247,7 +290,6 @@ function formatTime(t) {
   const hour = parseInt(h, 10);
   return `${hour % 12 || 12}:${m} ${hour >= 12 ? 'PM' : 'AM'}`;
 }
-
 
 /* ===============================
    AUTO REFRESH

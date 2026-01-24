@@ -1,7 +1,7 @@
 <?php
 // ==============================================
 // api/save_eye_exam.php
-// Save eye examination results
+// Save eye examination results (appointment_id nullable)
 // ==============================================
 
 header('Content-Type: application/json');
@@ -12,7 +12,7 @@ try {
     $conn = new mysqli("localhost", "root", "", "bagares_system");
     
     if ($conn->connect_error) {
-        throw new Exception("Database connection failed");
+        throw new Exception("Database connection failed: " . $conn->connect_error);
     }
 
     $data = json_decode(file_get_contents("php://input"), true);
@@ -21,31 +21,52 @@ try {
         throw new Exception("Invalid JSON");
     }
 
-    $appointment_id = intval($data['appointment_id'] ?? 0);
+    // Allow appointment_id to be null
+    $appointment_id = isset($data['appointment_id']) ? intval($data['appointment_id']) : null;
     $exam_date = $data['exam_date'] ?? null;
 
-    if (!$appointment_id || !$exam_date) {
-        throw new Exception("Missing appointment ID or exam date");
+    $patient_id = null;
+
+    // If appointment_id is provided, fetch patient_id from appointment
+    if ($appointment_id) {
+        $stmt = $conn->prepare("SELECT patient_id FROM appointment WHERE appointment_id = ?");
+        $stmt->bind_param("i", $appointment_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            throw new Exception("Appointment not found");
+        }
+
+        $row = $result->fetch_assoc();
+        $patient_id = $row['patient_id'];
+        $stmt->close();
     }
 
-    // Get patient_id from appointment
-    $stmt = $conn->prepare("SELECT patient_id FROM appointment WHERE appointment_id = ?");
-    $stmt->bind_param("i", $appointment_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows === 0) {
-        throw new Exception("Appointment not found");
+    // If no appointment, patient_id must be provided in the request
+    if (!$patient_id) {
+        if (empty($data['patient_id'])) {
+            throw new Exception("Patient ID is required when appointment is null");
+        }
+        $patient_id = intval($data['patient_id']);
     }
-    
-    $row = $result->fetch_assoc();
-    $patient_id = $row['patient_id'];
-    $stmt->close();
 
-    // 🔥 FIX: Set request_id to NULL since there's no direct link
-    $request_id = null;
+    // Convert eye exam fields to proper types
+    $od_sph = isset($data['od_sph']) && $data['od_sph'] !== '' ? floatval($data['od_sph']) : 0;
+    $od_cyl = isset($data['od_cyl']) && $data['od_cyl'] !== '' ? floatval($data['od_cyl']) : 0;
+    $od_axis = isset($data['od_axis']) && $data['od_axis'] !== '' ? intval($data['od_axis']) : 0;
+    $od_add = isset($data['od_add']) && $data['od_add'] !== '' ? floatval($data['od_add']) : 0;
 
-    // Insert eye examination with NULL request_id
+    $os_sph = isset($data['os_sph']) && $data['os_sph'] !== '' ? floatval($data['os_sph']) : 0;
+    $os_cyl = isset($data['os_cyl']) && $data['os_cyl'] !== '' ? floatval($data['os_cyl']) : 0;
+    $os_axis = isset($data['os_axis']) && $data['os_axis'] !== '' ? intval($data['os_axis']) : 0;
+    $os_add = isset($data['os_add']) && $data['os_add'] !== '' ? floatval($data['os_add']) : 0;
+
+    $pd = isset($data['pd']) && $data['pd'] !== '' ? intval($data['pd']) : 0;
+
+    $request_id = null; // No direct link
+
+    // Prepare insert statement
     $insertStmt = $conn->prepare("
         INSERT INTO eye_examinations (
             patient_id,
@@ -67,21 +88,6 @@ try {
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
     ");
 
-    // Convert values to proper types
-    $od_sph = $data['od_sph'] !== '' ? floatval($data['od_sph']) : 0;
-    $od_cyl = $data['od_cyl'] !== '' ? floatval($data['od_cyl']) : 0;
-    $od_axis = $data['od_axis'] !== '' ? intval($data['od_axis']) : 0;
-    $od_add = $data['od_add'] !== '' ? floatval($data['od_add']) : 0;
-    
-    $os_sph = $data['os_sph'] !== '' ? floatval($data['os_sph']) : 0;
-    $os_cyl = $data['os_cyl'] !== '' ? floatval($data['os_cyl']) : 0;
-    $os_axis = $data['os_axis'] !== '' ? intval($data['os_axis']) : 0;
-    $os_add = $data['os_add'] !== '' ? floatval($data['os_add']) : 0;
-    
-    $pd = $data['pd'] !== '' ? intval($data['pd']) : 0;
-
-    // 15 parameters: 3 ints (patient_id, appointment_id, request_id=NULL), 
-    // 1 string (exam_date), 8 decimals, 3 ints, 2 strings
     $insertStmt->bind_param(
         "iiisddiddiddiss",
         $patient_id,
@@ -108,16 +114,17 @@ try {
     $exam_id = $conn->insert_id;
     $insertStmt->close();
 
-    // Update appointment status to completed
-    $updateStmt = $conn->prepare("
-        UPDATE appointment
-        SET status = 'completed'
-        WHERE appointment_id = ?
-    ");
-    
-    $updateStmt->bind_param("i", $appointment_id);
-    $updateStmt->execute();
-    $updateStmt->close();
+    // Update appointment status only if appointment exists
+    if ($appointment_id) {
+        $updateStmt = $conn->prepare("
+            UPDATE appointment
+            SET status = 'completed'
+            WHERE appointment_id = ?
+        ");
+        $updateStmt->bind_param("i", $appointment_id);
+        $updateStmt->execute();
+        $updateStmt->close();
+    }
 
     echo json_encode([
         "success" => true,
