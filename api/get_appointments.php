@@ -13,7 +13,8 @@ $date = $_GET['date'] ?? null;
 
 /*
  FLOW:
- appointment ← confirmed patient_request ← patient
+ appointment ← patient (required)
+ patient_request (optional - only for online bookings)
 */
 
 $sql = "
@@ -37,13 +38,13 @@ SELECT
     ) AS patient_name
 
 FROM appointment a
-INNER JOIN patient_request pr 
+INNER JOIN patient p 
+    ON p.patient_id = a.patient_id
+LEFT JOIN patient_request pr 
     ON pr.patient_id = a.patient_id
     AND pr.appointment_date = a.appointment_date
     AND pr.appointment_time = a.appointment_time
     AND pr.status = 'confirmed'
-INNER JOIN patient p 
-    ON p.patient_id = a.patient_id
 
 WHERE a.status = 'scheduled'
 ";
@@ -67,14 +68,14 @@ $appointments = [];
 while ($row = $result->fetch_assoc()) {
     $appointments[] = [
         "appointment_id"   => (int)$row["appointment_id"],
-        "request_id"       => (int)$row["request_id"],
+        "request_id"       => $row["request_id"] ? (int)$row["request_id"] : null,
         "patient_id"       => (int)$row["patient_id"],
         "patient_name"     => trim($row["patient_name"]),
         "appointment_date" => $row["appointment_date"],
         "appointment_time" => $row["appointment_time"],
         "service"          => $row["service"],
         "appointment_status" => $row["appointment_status"],
-        "request_status"     => $row["request_status"],
+        "request_status"     => $row["request_status"] ?? null,
         "created_at"       => $row["created_at"]
     ];
 }

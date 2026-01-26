@@ -1,85 +1,98 @@
-// Load the modal HTML first
+// =============================================
+// Load Add Appointment Modal
+// =============================================
 fetch('../components/modals/add-appointment.html')
-  .then(res => res.text())
+  .then(res => {
+    if (!res.ok) throw new Error(`Failed to load modal: ${res.status}`);
+    return res.text();
+  })
   .then(data => {
-    document.getElementById('add-appointment-modal-placeholder').innerHTML = data;
+    const placeholder = document.getElementById('add-appointment-modal-placeholder');
+    if (!placeholder) {
+      console.error('Placeholder #add-appointment-modal-placeholder not found in page');
+      return;
+    }
+
+    placeholder.innerHTML = data;
     console.log('Add appointment modal loaded successfully');
-    
-    // Use setTimeout to ensure DOM is fully updated
+
+    // Give DOM a moment to parse the new HTML
     setTimeout(() => {
       setupModalEventListeners();
-    }, 100);
+    }, 50);
   })
-  .catch(error => {
-    console.error('Error loading add appointment modal:', error);
+  .catch(err => {
+    console.error('Error loading add appointment modal:', err);
   });
 
-// Setup event listeners after modal is loaded
+// =============================================
+// Setup modal behavior after load
+// =============================================
 function setupModalEventListeners() {
   const modal = document.getElementById('addAppointmentModal');
-  
   if (!modal) {
-    console.error('Modal not found after loading. Check your HTML file.');
+    console.error('Modal #addAppointmentModal not found after insertion');
     return;
   }
 
-  console.log('Modal found! Setting up listeners...');
+  console.log('Modal found – listeners attached');
 
-  // Close on overlay click
+  // Close when clicking outside (overlay)
   modal.addEventListener('click', function(e) {
     if (e.target === modal) {
       closeAddAppointmentModal();
     }
   });
+
+  // Set minimum date = today
+  const dateInput = document.getElementById('appointmentDate');
+  if (dateInput) {
+    dateInput.min = new Date().toISOString().split('T')[0];
+  }
 }
 
-// Global Escape key listener
+// =============================================
+// Global ESC key to close modal
+// =============================================
 document.addEventListener('keydown', function(e) {
   const modal = document.getElementById('addAppointmentModal');
-  if (e.key === 'Escape' && modal && modal.classList.contains('show')) {
+  if (e.key === 'Escape' && modal?.classList.contains('show')) {
     closeAddAppointmentModal();
   }
 });
 
-// Open Modal (called from button click)
+// =============================================
+// Open / Close Modal
+// =============================================
 window.openAddAppointmentModal = function() {
   const modal = document.getElementById('addAppointmentModal');
-  
   if (!modal) {
-    console.error('Modal not loaded yet. Make sure add-appointment-modal.html exists.');
+    console.error('Cannot open modal – #addAppointmentModal not found');
     return;
   }
-
   modal.classList.add('show');
-  
-  // Set default date to today
-  const today = new Date().toISOString().split('T')[0];
-  const dateInput = document.getElementById('appointmentDate');
-  if (dateInput) {
-    dateInput.value = today;
-  }
-}
+};
 
-// Close Modal
 window.closeAddAppointmentModal = function() {
   const modal = document.getElementById('addAppointmentModal');
-  const form = document.getElementById('appointmentForm');
-  
   if (modal) {
     modal.classList.remove('show');
+    const warning = document.getElementById('conflictWarning');
+    if (warning) warning.classList.add('hidden');
   }
-  
-  if (form) {
-    form.reset();
-  }
-}
 
-// Save Appointment
-window.saveAppointment = function() {
   const form = document.getElementById('appointmentForm');
-  
+  if (form) form.reset();
+};
+
+// =============================================
+// Save Appointment – FIXED VERSION
+// =============================================
+window.saveAppointment = async function() {
+  const form = document.getElementById('appointmentForm');
   if (!form) {
-    console.error('Form not found');
+    console.error('Form #appointmentForm not found');
+    alert('Error: Form not found. Please check modal HTML.');
     return;
   }
 
@@ -88,22 +101,86 @@ window.saveAppointment = function() {
     return;
   }
 
-  const appointmentData = {
-    patientName: document.getElementById('patientName').value,
-    date: document.getElementById('appointmentDate').value,
-    time: document.getElementById('appointmentTime').value,
-    service: document.getElementById('service').value,
-    phone: document.getElementById('phone').value,
-    email: document.getElementById('email').value || '',
-    status: document.getElementById('status').value,
-    notes: document.getElementById('notes').value || ''
+  // Gather values with safety checks
+  const getValue = (id) => {
+    const el = document.getElementById(id);
+    if (!el) {
+      console.warn(`Element #${id} not found`);
+      return '';
+    }
+    return el.value.trim();
   };
 
-  console.log('New Appointment:', appointmentData);
-  
-  // TODO: Send to backend/database here
-  // fetch('/api/appointments', { method: 'POST', body: JSON.stringify(appointmentData) })
-  
-  alert('Appointment saved successfully!');
-  closeAddAppointmentModal();
-}
+  const data = {
+    firstname:        getValue('firstname'),
+    middlename:       getValue('middlename') || null,
+    lastname:         getValue('lastname'),
+    suffix:           getValue('suffix') || null,
+    phone:            getValue('phone') || null,
+    email:            getValue('email') || null,
+    appointment_date: getValue('appointmentDate'),
+    appointment_time: getValue('appointmentTime'),
+    service:          getValue('service'),
+    notes:            getValue('notes') || null
+  };
+
+  // Required fields quick check
+  if (!data.firstname || !data.lastname || !data.appointment_date || 
+      !data.appointment_time || !data.service) {
+    alert('Please fill all required fields.');
+    return;
+  }
+
+  const warning = document.getElementById('conflictWarning');
+
+  try {
+    // 1. Check if time slot is already taken
+    const checkRes = await fetch('../api/check_appointment_slot.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        appointment_date: data.appointment_date,
+        appointment_time: data.appointment_time
+      })
+    });
+
+    if (!checkRes.ok) {
+      throw new Error(`Conflict check failed: ${checkRes.status}`);
+    }
+
+    const check = await checkRes.json();
+
+    if (check.conflict === true) {
+      if (warning) warning.classList.remove('hidden');
+      return;
+    }
+
+    // 2. Create patient (if needed) + appointment
+    const saveRes = await fetch('../api/save_appointment.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!saveRes.ok) {
+      throw new Error(`Save failed: ${saveRes.status}`);
+    }
+
+    const result = await saveRes.json();
+
+    if (result.success) {
+      alert('Appointment added successfully!');
+      closeAddAppointmentModal();
+      // Refresh table if function exists
+      if (typeof window.refreshAppointments === 'function') {
+        window.refreshAppointments();
+      }
+    } else {
+      alert('Error from server: ' + (result.error || 'Unknown error'));
+    }
+
+  } catch (err) {
+    console.error('Appointment save failed:', err);
+    alert('Error: ' + err.message);
+  }
+};
