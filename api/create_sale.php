@@ -1,69 +1,86 @@
 <?php
-error_log("✅ Using UPDATED create_sale.php with stock history");
+/**
+ * ENHANCED CREATE SALE API
+ * Features: Staff tracking, Discount, Exam linking, Payment details
+ */
+error_log("✅ Using ENHANCED create_sale.php");
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Headers: Content-Type");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
+}
 
 $conn = new mysqli("localhost", "root", "", "bagares_system");
 
 if ($conn->connect_error) {
-    echo json_encode([
-        "success" => false,
-        "error" => "Database connection failed"
-    ]);
+    echo json_encode(["success" => false, "error" => "Database connection failed"]);
     exit;
 }
 
 $data = json_decode(file_get_contents("php://input"), true);
 
 if (!$data) {
-    echo json_encode([
-        "success" => false,
-        "error" => "Invalid JSON payload"
-    ]);
+    echo json_encode(["success" => false, "error" => "Invalid JSON payload"]);
     exit;
 }
 
-$patient_id     = $data['patient_id'] ?? null;
-$sale_date      = $data['sale_date'] ?? null;
-$payment_method = $data['payment_method'] ?? null;
-$total_amount   = $data['total_amount'] ?? 0;
-$items          = $data['items'] ?? [];
+// Extract data
+$patient_id       = $data['patient_id'] ?? null;
+$patient_name     = $data['patient_name'] ?? 'Walk-in Customer';
+$sale_date        = $data['sale_date'] ?? date('Y-m-d');
+$exam_id          = $data['exam_id'] ?? null;
+$payment_method   = $data['payment_method'] ?? null;
+$subtotal         = $data['subtotal'] ?? 0;
+$discount_type    = $data['discount_type'] ?? 'none';
+$discount_amount  = $data['discount_amount'] ?? 0;
+$discount_id_num  = $data['discount_id_number'] ?? '';
+$total_amount     = $data['total_amount'] ?? 0;
+$amount_tendered  = $data['amount_tendered'] ?? null;
+$change_amount    = $data['change_amount'] ?? null;
+$reference_number = $data['reference_number'] ?? null;
+$staff_id         = $data['staff_id'] ?? null;
+$staff_name       = $data['staff_name'] ?? null;
+$items            = $data['items'] ?? [];
 
-if (!$sale_date || !$payment_method || empty($items)) {
-    echo json_encode([
-        "success" => false,
-        "error" => "Missing required sale data"
-    ]);
+if (!$payment_method || empty($items)) {
+    echo json_encode(["success" => false, "error" => "Missing required sale data"]);
     exit;
 }
 
 $conn->begin_transaction();
 
 try {
-    // Get patient name for stock history reason
-    $patient_name = 'Walk-in Customer';
-    if ($patient_id) {
-        $nameStmt = $conn->prepare("
-            SELECT CONCAT(firstname, ' ', lastname) as name 
-            FROM patient 
-            WHERE patient_id = ?
-        ");
-        $nameStmt->bind_param("i", $patient_id);
-        $nameStmt->execute();
-        $nameResult = $nameStmt->get_result();
-        if ($nameRow = $nameResult->fetch_assoc()) {
-            $patient_name = $nameRow['name'];
-        }
-        $nameStmt->close();
-    }
-
-    // 1️⃣ INSERT INTO sales
+    // 1️⃣ INSERT INTO sales (with enhanced fields)
     $stmt = $conn->prepare("
         INSERT INTO sales 
-        (patient_id, sale_date, total_amount, payment_status, created_at)
-        VALUES (?, ?, ?, 'paid', NOW())
+        (patient_id, patient_name, exam_id, sale_date, subtotal, discount_type, 
+         discount_amount, discount_id_number, total_amount, payment_method, 
+         payment_status, amount_tendered, change_amount, reference_number,
+         staff_id, staff_name, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', ?, ?, ?, ?, ?, NOW())
     ");
-    $stmt->bind_param("isd", $patient_id, $sale_date, $total_amount);
+    
+    $stmt->bind_param(
+        "isisdsdsdsddsiss",
+        $patient_id,
+        $patient_name,
+        $exam_id,
+        $sale_date,
+        $subtotal,
+        $discount_type,
+        $discount_amount,
+        $discount_id_num,
+        $total_amount,
+        $payment_method,
+        $amount_tendered,
+        $change_amount,
+        $reference_number,
+        $staff_id,
+        $staff_name
+    );
     
     if (!$stmt->execute()) {
         throw new Exception("Failed to create sale: " . $stmt->error);
@@ -72,7 +89,7 @@ try {
     $sale_id = $stmt->insert_id;
     $stmt->close();
 
-    // 2️⃣ Prepare statements
+    // 2️⃣ Prepare statements for items and stock
     $itemStmt = $conn->prepare("
         INSERT INTO sale_items 
         (sale_id, inventory_id, quantity, price, subtotal)
@@ -85,7 +102,6 @@ try {
         WHERE inventory_id = ? AND stock >= ?
     ");
 
-    // 🔥 CRITICAL FIX: Insert into stocks_history
     $historyStmt = $conn->prepare("
         INSERT INTO stocks_history 
         (inventory_id, type, quantity, reason, created_at)
@@ -97,10 +113,10 @@ try {
         $inventory_id = $item['inventory_id'];
         $qty          = $item['quantity'];
         $price        = $item['price'];
-        $subtotal     = $price * $qty;
+        $item_subtotal = $price * $qty;
 
         // a) Insert sale item
-        $itemStmt->bind_param("iiidd", $sale_id, $inventory_id, $qty, $price, $subtotal);
+        $itemStmt->bind_param("iiidd", $sale_id, $inventory_id, $qty, $price, $item_subtotal);
         if (!$itemStmt->execute()) {
             throw new Exception("Failed to insert sale item: " . $itemStmt->error);
         }
@@ -115,8 +131,11 @@ try {
             throw new Exception("Insufficient stock for inventory_id: $inventory_id");
         }
 
-        // c) 🔥 Record stock movement in stocks_history
+        // c) Record stock movement
         $reason = "Sold to: " . $patient_name . " (Sale #" . $sale_id . ")";
+        if ($staff_name) {
+            $reason .= " by " . $staff_name;
+        }
         $historyStmt->bind_param("iis", $inventory_id, $qty, $reason);
         
         if (!$historyStmt->execute()) {
@@ -133,7 +152,7 @@ try {
     echo json_encode([
         "success" => true,
         "sale_id" => $sale_id,
-        "message" => "Sale completed and stock history recorded"
+        "message" => "Sale completed successfully"
     ]);
 
 } catch (Exception $e) {
