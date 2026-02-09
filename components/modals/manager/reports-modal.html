@@ -1,65 +1,30 @@
-<!-- Custom Report Modal -->
 <div class="custom-report-modal" id="customReportModal">
   <div class="modal-overlay" onclick="closeCustomReportModal()"></div>
   <div class="modal-content">
     <div class="modal-header">
-      <h2>Generate Custom Report</h2>
+      <h2>Export Inventory Report</h2>
       <button class="close-btn" onclick="closeCustomReportModal()">×</button>
     </div>
 
     <div class="modal-body">
-      <div class="form-group">
-        <label>Report Type</label>
-        <select id="customReportType">
-          <option value="inventory">Inventory Report</option>
-          <option value="purchases">Purchases Report</option>
-          <option value="sales">Sales Report</option>
-          <option value="stock-movement">Stock Movement Report</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Date Range</label>
-        <div class="date-range">
-          <input type="date" id="customDateFrom">
-          <span>to</span>
-          <input type="date" id="customDateTo">
-        </div>
-      </div>
-
+      <p class="modal-instruction">Select the columns you wish to include in your exported inventory file.</p>
+      
       <div class="form-group">
         <label>Columns to Include <small>(Hold Ctrl/Cmd to select multiple)</small></label>
-        <select id="customColumns" multiple size="8">
-          <!-- Options will be populated dynamically by JS -->
+        <select id="customColumns" multiple size="6">
+          <option value="product_name" selected>Product Name</option>
+          <option value="sku" selected>SKU</option>
+          <option value="category" selected>Category</option>
+          <option value="stock" selected>Current Stock</option>
+          <option value="price" selected>Unit Price</option>
+          <option value="status" selected>Status</option>
         </select>
-      </div>
-
-      <div class="form-group">
-        <label>Export Format</label>
-        <div class="radio-group">
-          <label><input type="radio" name="exportFormat" value="pdf" checked> PDF</label>
-          <label><input type="radio" name="exportFormat" value="excel"> Excel</label>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>
-          <input type="checkbox" id="scheduleRecurring">
-          Schedule Recurring Report
-        </label>
-        <div id="recurringOptions" style="display:none; margin-top:0.5rem;">
-          <select id="recurringFrequency">
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </div>
       </div>
     </div>
 
     <div class="modal-footer">
       <button class="cancel-btn" onclick="closeCustomReportModal()">Cancel</button>
-      <button class="generate-final-btn" onclick="generateFinalCustomReport()">Generate Report</button>
+      <button class="generate-final-btn" onclick="generateFinalCustomReport()">Download CSV</button>
     </div>
   </div>
 </div>

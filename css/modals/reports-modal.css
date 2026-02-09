@@ -6,7 +6,7 @@
   left: 0;
   width: 100%; 
   height: 100%;
-  z-index: 99999; /* ← INCREASED from 10000 */
+  z-index: 99999;
   pointer-events: none;
 }
 
@@ -23,38 +23,33 @@
   left: 0;
   width: 100%; 
   height: 100%;
-  background: rgba(0,0,0,0.75); /* ← Removed backdrop-filter */
+  background: rgba(15, 23, 42, 0.65); /* Modern slate overlay */
+  backdrop-filter: blur(4px);
   z-index: 1;
   pointer-events: auto;
 }
 
 .modal-content {
   background: white;
-  width: 90%;
-  max-width: 600px;
+  width: 95%;
+  max-width: 500px;
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   overflow: hidden;
-  animation: slideUp 0.25s ease;
   position: relative;
   z-index: 2;
+  animation: slideUp 0.25s ease;
   pointer-events: auto;
 }
 
 @keyframes slideUp {
-  from { 
-    opacity: 0; 
-    transform: translateY(30px);
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
-  }
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
-  padding: 1.5rem;
-  background: #3b82f6;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6, #06b6d4); /* Clinic Signature Gradient */
   color: white;
   display: flex;
   justify-content: space-between;
@@ -63,245 +58,110 @@
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
 .close-btn {
-  background: none;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   cursor: pointer;
-  line-height: 1;
-  padding: 0;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: background 0.2s;
+  border-radius: 8px;
+  transition: 0.2s;
 }
 
 .close-btn:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .modal-body {
   padding: 1.5rem;
-  max-height: 60vh;
-  overflow-y: auto;
 }
 
-.form-group {
-  margin-bottom: 1.2rem;
+.modal-instruction {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 1.25rem;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #374151;
-  font-size: 0.95rem;
-}
-
-.form-group select,
-.form-group input[type="date"] {
-  width: 100%;
-  padding: 0.65rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: border-color 0.2s;
-}
-
-.form-group select:focus,
-.form-group input[type="date"]:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.date-range {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.date-range input {
-  flex: 1;
-}
-
-.date-range span {
-  color: #6b7280;
-  font-weight: 500;
+  color: #1e293b;
+  font-size: 0.9rem;
 }
 
 #customColumns {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  min-height: 120px;
-  font-size: 0.95rem;
+  min-height: 160px;
+  font-size: 0.9rem;
+  color: #334155;
+  background-color: #f8fafc;
 }
 
 #customColumns:focus {
   outline: none;
   border-color: #3b82f6;
+  background-color: #fff;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.radio-group {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.radio-group label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: normal;
-  cursor: pointer;
-  color: #374151;
-}
-
-.radio-group input[type="radio"] {
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-}
-
-.checkbox-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.checkbox-group input[type="checkbox"] {
-  cursor: pointer;
-  width: 18px;
-  height: 18px;
-}
-
-.checkbox-group label {
-  cursor: pointer;
-  font-weight: normal;
-  color: #374151;
-}
-
-#recurringOptions {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
-#recurringOptions label {
-  font-size: 0.9rem;
 }
 
 .modal-footer {
   padding: 1rem 1.5rem;
-  background: #f9fafb;
+  background: #f8fafc;
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #f1f5f9;
 }
 
 .cancel-btn {
-  padding: 0.65rem 1.2rem;
-  background: #e5e7eb;
-  border: none;
+  padding: 0.625rem 1.2rem;
+  background: white;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.95rem;
-  transition: background 0.2s;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 0.875rem;
+  transition: 0.2s;
 }
 
 .cancel-btn:hover {
-  background: #d1d5db;
+  background: #f1f5f9;
+  color: #1e293b;
 }
 
 .generate-final-btn {
-  padding: 0.65rem 1.5rem;
+  padding: 0.625rem 1.5rem;
   background: #3b82f6;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.95rem;
-  transition: background 0.2s;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+  transition: 0.2s;
 }
 
 .generate-final-btn:hover {
   background: #2563eb;
+  transform: translateY(-1px);
 }
 
-.generate-final-btn:active {
-  transform: scale(0.98);
-}
-
-/* Scrollbar styling for modal body */
-.modal-body::-webkit-scrollbar {
-  width: 8px;
-}
-
-.modal-body::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.modal-body::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-.modal-body::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .modal-content {
-    width: 95%;
-    max-width: none;
-  }
-
-  .modal-header h2 {
-    font-size: 1.2rem;
-  }
-
-  .modal-body {
-    padding: 1rem;
-    max-height: 70vh;
-  }
-
-  .date-range {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .radio-group {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .modal-footer {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .cancel-btn,
-  .generate-final-btn {
-    width: 100%;
-  }
-}
+/* Custom Scrollbar */
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
