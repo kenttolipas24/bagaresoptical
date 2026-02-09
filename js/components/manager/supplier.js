@@ -1,254 +1,239 @@
-// Load suppliers.html
+/**
+ * supplier.js - Bagares Optical Clinic
+ */
+
+// Global data store to allow filtering without refetching from the server
+let allSuppliers = [];
+
+// FIX: Prevent "Identifier has already been declared" error
+if (typeof window.supplierData === 'undefined') {
+    window.supplierData = [];
+}
+
+// ==========================================================================
+// 1. INITIALIZATION & COMPONENT LOADING
+// ==========================================================================
+
 fetch('../components/manager/supplier.html')
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById('supplier-placeholder').innerHTML = data;
-  })
-  .catch(error => console.error('Error loading suppliers:', error));
+    .then(res => res.text())
+    .then(html => {
+        const placeholder = document.getElementById('supplier-placeholder');
+        if (placeholder) {
+            placeholder.innerHTML = html;
+            loadSuppliers(); // Fetch real data from DB
+        }
+    })
+    .catch(err => console.error('Error loading supplier component:', err));
 
-// Filter suppliers
+async function loadSuppliers() {
+    try {
+        const res = await fetch('../api/get_suppliers.php');
+        const data = await res.json();
+        
+        // Cache the full list for filtering
+        allSuppliers = data; 
+        window.supplierData = data;
+        
+        renderSupplierTable(data);
+    } catch (err) {
+        console.warn('API not ready, showing empty state.');
+        renderSupplierTable([]);
+    }
+}
+
+// ==========================================================================
+// 2. TABLE RENDERING, SEARCH & FILTERS
+// ==========================================================================
+
+function getInitials(name) {
+    if (!name) return "??";
+    const parts = name.split(' ').filter(part => part.length > 0);
+    return parts.length > 1 
+        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() 
+        : name.substring(0, 2).toUpperCase();
+}
+
+/**
+ * Main Search Function - Triggered by search input
+ */
 function filterSuppliers() {
-  const searchValue = document.getElementById('searchSupplierInput').value.toLowerCase();
-  const rows = document.querySelectorAll('#supplierTableBody tr');
-  
-  rows.forEach(row => {
-    const supplierName = row.cells[1].textContent.toLowerCase();
-    const contactPerson = row.cells[2].textContent.toLowerCase();
-    const email = row.cells[3].textContent.toLowerCase();
-    
-    if (supplierName.includes(searchValue) || contactPerson.includes(searchValue) || email.includes(searchValue)) {
-      row.style.display = '';
-    } else {
-      row.style.display = 'none';
-    }
-  });
-  
-  updateSupplierCount();
+    const searchTerm = document.getElementById('searchSupplierInput').value.toLowerCase();
+    applySupplierFilters(searchTerm);
 }
 
-// Apply filters
-function applySupplierFilters() {
-  const statusFilter = document.getElementById('statusFilterSupplier').value;
-  const categoryFilter = document.getElementById('categoryFilterSupplier').value;
-  const rows = document.querySelectorAll('#supplierTableBody tr');
-  
-  rows.forEach(row => {
-    let showRow = true;
-    
-    if (statusFilter !== 'all') {
-      const rowStatus = row.dataset.status;
-      if (rowStatus !== statusFilter) showRow = false;
+/**
+ * Advanced Filter Function - Handles Category and Status dropdowns
+ */
+function applySupplierFilters(searchTerm = "") {
+    if (!searchTerm) {
+        searchTerm = document.getElementById('searchSupplierInput')?.value.toLowerCase() || "";
     }
     
-    if (categoryFilter !== 'all') {
-      const rowCategory = row.dataset.category;
-      if (rowCategory !== categoryFilter) showRow = false;
-    }
-    
-    row.style.display = showRow ? '' : 'none';
-  });
-  
-  updateSupplierCount();
+    const statusFilter = document.getElementById('statusFilterSupplier')?.value || "all";
+    const categoryFilter = document.getElementById('categoryFilterSupplier')?.value || "all";
+
+    const filtered = allSuppliers.filter(sup => {
+        const matchesSearch = sup.supplier_name.toLowerCase().includes(searchTerm) || 
+                              sup.contact_person.toLowerCase().includes(searchTerm);
+        
+        const matchesStatus = (statusFilter === "all" || sup.status.toLowerCase() === statusFilter);
+        const matchesCategory = (categoryFilter === "all" || sup.category.toLowerCase() === categoryFilter);
+
+        return matchesSearch && matchesStatus && matchesCategory;
+    });
+
+    renderSupplierTable(filtered);
 }
 
-// Sort table
+/**
+ * Sorting Function
+ */
+let supplierSortDirection = true;
 function sortSupplierTable(column) {
-  const tbody = document.getElementById('supplierTableBody');
-  const rows = Array.from(tbody.querySelectorAll('tr'));
-  
-  const columnMap = { name: 1, contact: 2, email: 3, phone: 4, category: 5, orders: 6 };
-  const columnIndex = columnMap[column];
-  
-  rows.sort((a, b) => {
-    let aValue = a.cells[columnIndex].textContent.trim();
-    let bValue = b.cells[columnIndex].textContent.trim();
+    supplierSortDirection = !supplierSortDirection;
     
-    if (column === 'orders') {
-      aValue = parseInt(aValue);
-      bValue = parseInt(bValue);
+    const sorted = [...allSuppliers].sort((a, b) => {
+        let valA, valB;
+        switch(column) {
+            case 'name': valA = a.supplier_name.toLowerCase(); valB = b.supplier_name.toLowerCase(); break;
+            case 'contact': valA = a.contact_person.toLowerCase(); valB = b.contact_person.toLowerCase(); break;
+            case 'orders': valA = parseInt(a.total_orders || 0); valB = parseInt(b.total_orders || 0); break;
+            default: return 0;
+        }
+
+        if (valA < valB) return supplierSortDirection ? -1 : 1;
+        if (valA > valB) return supplierSortDirection ? 1 : -1;
+        return 0;
+    });
+
+    renderSupplierTable(sorted);
+}
+
+function renderSupplierTable(suppliers) {
+    const tbody = document.getElementById('supplierTableBody');
+    if (!tbody) return;
+
+    if (!suppliers || suppliers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem; color: #6b7280;">No suppliers found matching criteria.</td></tr>';
+        return;
     }
-    
-    return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-  });
-  
-  rows.forEach(row => tbody.appendChild(row));
+
+    tbody.innerHTML = suppliers.map(sup => {
+        const categorySlug = sup.category ? sup.category.toLowerCase() : 'none';
+        const statusSlug = sup.status ? sup.status.toLowerCase() : 'inactive';
+
+        return `
+        <tr data-category="${categorySlug}" data-status="${statusSlug}">
+            <td><div class="supplier-logo">${getInitials(sup.supplier_name)}</div></td>
+            <td><span class="supplier-name">${sup.supplier_name}</span></td>
+            <td>${sup.contact_person}</td>
+            <td>${sup.email}</td>
+            <td>${sup.phone}</td>
+            <td><span class="category-badge ${categorySlug}">${sup.category}</span></td>
+            <td><strong>${sup.total_orders || 0}</strong></td>
+            <td><span class="status-badge ${statusSlug}">${sup.status}</span></td>
+            <td>
+                <div class="menu-container">
+                    <button class="menu-dot-btn" onclick="toggleMenu(event, ${sup.supplier_id})">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="5" r="1"></circle>
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="12" cy="19" r="1"></circle>
+                        </svg>
+                    </button>
+                    <div id="dropdown-${sup.supplier_id}" class="menu-dropdown">
+                        <button onclick="viewSupplier(${sup.supplier_id})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            View Details
+                        </button>
+                        <button onclick="editSupplier(${sup.supplier_id})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            Edit Supplier
+                        </button>
+                    </div>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
 }
 
-// Toggle select all
-function toggleSelectAllSuppliers() {
-  const selectAll = document.getElementById('selectAllSuppliers');
-  const checkboxes = document.querySelectorAll('.supplier-checkbox');
-  
-  checkboxes.forEach(checkbox => {
-    if (checkbox.closest('tr').style.display !== 'none') {
-      checkbox.checked = selectAll.checked;
-    }
-  });
-}
+// ==========================================================================
+// 3. MODAL MANAGEMENT & CRUD
+// ==========================================================================
 
-// Update count
-function updateSupplierCount() {
-  const visibleRows = Array.from(document.querySelectorAll('#supplierTableBody tr')).filter(
-    row => row.style.display !== 'none'
-  );
-  
-  document.getElementById('supplierResultCount').textContent = `Showing ${visibleRows.length} suppliers`;
-  document.getElementById('supplierShowingStart').textContent = visibleRows.length > 0 ? '1' : '0';
-  document.getElementById('supplierShowingEnd').textContent = visibleRows.length;
-  document.getElementById('totalSuppliers').textContent = visibleRows.length;
-}
-
-// View supplier
-function viewSupplier(button) {
-  const row = button.closest('tr');
-  const supplierName = row.cells[1].textContent.trim();
-  const contact = row.cells[2].textContent.trim();
-  const email = row.cells[3].textContent.trim();
-  const phone = row.cells[4].textContent.trim();
-  const category = row.cells[5].textContent.trim();
-  const orders = row.cells[6].textContent.trim();
-  const status = row.cells[7].textContent.trim();
-  
-  alert(`Supplier Details:\n\nName: ${supplierName}\nContact Person: ${contact}\nEmail: ${email}\nPhone: ${phone}\nCategory: ${category}\nTotal Orders: ${orders}\nStatus: ${status}`);
-}
-
-// Edit supplier
-function editSupplier(button) {
-  const row = button.closest('tr');
-  const supplierName = row.cells[1].textContent.trim();
-  
-  alert(`Edit Supplier: ${supplierName}\n\nThis would open a form to edit:\n- Company name\n- Contact person\n- Email & phone\n- Address\n- Category\n- Payment terms`);
-}
-
-// View supplier orders
-function viewSupplierOrders(button) {
-  const row = button.closest('tr');
-  const supplierName = row.cells[1].textContent.trim();
-  const totalOrders = row.cells[6].textContent.trim();
-  
-  alert(`${supplierName} - Order History\n\nTotal Orders: ${totalOrders}\n\nThis would show:\n- List of all purchase orders\n- Order dates and amounts\n- Delivery status\n- Payment history`);
-}
-
-// Delete/Deactivate supplier
-function deleteSupplier(button) {
-  const row = button.closest('tr');
-  const supplierName = row.cells[1].textContent.trim();
-  
-  if (confirm(`Deactivate supplier: ${supplierName}?`)) {
-    const statusBadge = row.cells[7].querySelector('.status-badge');
-    statusBadge.className = 'status-badge inactive';
-    statusBadge.textContent = 'Inactive';
-    row.dataset.status = 'inactive';
-    
-    // Update action buttons
-    const actionsCell = row.cells[8];
-    actionsCell.innerHTML = `
-      <div class="action-buttons">
-        <button class="action-btn view" onclick="viewSupplier(this)" title="View Details">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-        </button>
-        <button class="action-btn activate" onclick="activateSupplier(this)" title="Activate">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-        </button>
-      </div>
-    `;
-    
-    alert(`Supplier ${supplierName} has been deactivated.`);
-  }
-}
-
-// Activate supplier
-function activateSupplier(button) {
-  const row = button.closest('tr');
-  const supplierName = row.cells[1].textContent.trim();
-  
-  if (confirm(`Activate supplier: ${supplierName}?`)) {
-    const statusBadge = row.cells[7].querySelector('.status-badge');
-    statusBadge.className = 'status-badge active';
-    statusBadge.textContent = 'Active';
-    row.dataset.status = 'active';
-    
-    // Update action buttons
-    const actionsCell = row.cells[8];
-    actionsCell.innerHTML = `
-      <div class="action-buttons">
-        <button class="action-btn view" onclick="viewSupplier(this)" title="View Details">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-        </button>
-        <button class="action-btn edit" onclick="editSupplier(this)" title="Edit">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
-        </button>
-        <button class="action-btn orders" onclick="viewSupplierOrders(this)" title="View Orders">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-          </svg>
-        </button>
-        <button class="action-btn delete" onclick="deleteSupplier(this)" title="Deactivate">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-          </svg>
-        </button>
-      </div>
-    `;
-    
-    alert(`Supplier ${supplierName} has been activated.`);
-  }
-}
-
-// Export suppliers
-function exportSuppliers() {
-  const rows = Array.from(document.querySelectorAll('#supplierTableBody tr')).filter(
-    row => row.style.display !== 'none'
-  );
-  
-  let csv = 'Supplier Name,Contact Person,Email,Phone,Category,Total Orders,Status\n';
-  
-  rows.forEach(row => {
-    const cells = row.cells;
-    const name = cells[1].textContent.trim();
-    const contact = cells[2].textContent.trim();
-    const email = cells[3].textContent.trim();
-    const phone = cells[4].textContent.trim();
-    const category = cells[5].textContent.trim();
-    const orders = cells[6].textContent.trim();
-    const status = cells[7].textContent.trim();
-    
-    csv += `"${name}","${contact}","${email}","${phone}","${category}","${orders}","${status}"\n`;
-  });
-  
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'suppliers_export.csv';
-  a.click();
-  window.URL.revokeObjectURL(url);
-  
-  alert('Suppliers exported successfully!');
-}
-
-// Add supplier modal
 function openAddSupplierModal() {
-  alert('Add New Supplier\n\nThis would open a form with:\n- Company name\n- Contact person name\n- Email address\n- Phone number\n- Address\n- Category (Frames/Lenses/Both)\n- Payment terms\n- Notes');
+    const modal = document.getElementById('addSupplierModal');
+    if (modal) modal.style.display = 'block';
 }
 
-// Pagination
-function previousSupplierPage() {
-  alert('Previous page');
+function closeSupplierModal() {
+    const modal = document.getElementById('addSupplierModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.getElementById('addSupplierForm').reset();
+    }
 }
 
-function nextSupplierPage() {
-  alert('Next page');
+async function handleCreateSupplier(event) {
+    event.preventDefault();
+    
+    const payload = {
+        supplier_name: document.getElementById('supName').value,
+        contact_person: document.getElementById('supContact').value,
+        email: document.getElementById('supEmail').value,
+        phone: document.getElementById('supPhone').value,
+        category: document.getElementById('supCategory').value,
+        status: 'Active'
+    };
+
+    try {
+        const res = await fetch('../api/create_suppliers.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            throw new Error(`Server returned status ${res.status}`);
+        }
+
+        const result = await res.json();
+        if (result.status === 'success') {
+            alert("Supplier added successfully!");
+            closeSupplierModal();
+            loadSuppliers(); // Refreshes and updates allSuppliers cache
+        } else {
+            alert("Database Error: " + result.message);
+        }
+    } catch (err) {
+        console.error("Critical Error:", err);
+        alert("Failed to save. Check console (F12) for the server error.");
+    }
 }
+
+//
+// Toggles the visibility of the 3-dot dropdown menu
+//
+
+function toggleMenu(event, id) {
+    event.stopPropagation();
+    
+    // Close all other open menus
+    document.querySelectorAll('.menu-dropdown').forEach(el => {
+        if (el.id !== `dropdown-${id}`) el.classList.remove('show');
+    });
+
+    const menu = document.getElementById(`dropdown-${id}`);
+    menu.classList.toggle('show');
+}
+
+// Close menu if user clicks anywhere else on the screen
+window.addEventListener('click', () => {
+    document.querySelectorAll('.menu-dropdown').forEach(el => el.classList.remove('show'));
+});

@@ -1,179 +1,171 @@
-// Load the purchase.html content
+/**
+ * purchase.js - Bagares Optical Clinic
+ */
+
+if (typeof window.inventoryData === 'undefined') {
+    window.inventoryData = [];
+}
+
+// 1. Initialization
 fetch('../components/manager/purchase.html')
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById('purchase-placeholder').innerHTML = data;
-  })
-  .catch(error => console.error('Error loading purchase orders:', error));
+    .then(res => res.text())
+    .then(html => {
+        const placeholder = document.getElementById('purchase-placeholder');
+        if (placeholder) {
+            placeholder.innerHTML = html;
+            loadPurchaseOrders();
+        }
+    })
+    .catch(err => console.error('Error loading purchase component:', err));
 
-// REMOVE THIS ENTIRE FUNCTION - it's already in navbar.js
-// function changePage(page, event) { ... }
-
-// Apply filters
-function applyOrderFilters() {
-  const statusFilter = document.getElementById('statusFilter').value;
-  const dateFilter = document.getElementById('dateFilter').value;
-  const supplierFilter = document.getElementById('supplierFilter').value;
-  const rows = document.querySelectorAll('#purchaseTableBody tr');
-  
-  rows.forEach(row => {
-    let showRow = true;
-    
-    // Status filter
-    if (statusFilter !== 'all') {
-      const rowStatus = row.dataset.status;
-      if (rowStatus !== statusFilter) showRow = false;
+async function loadPurchaseOrders() {
+    try {
+        const res = await fetch('../api/get_purchase_orders.php');
+        const data = await res.json();
+        renderPurchaseTable(data);
+    } catch (err) {
+        renderPurchaseTable([]);
     }
-    
-    // Supplier filter
-    if (supplierFilter !== 'all') {
-      const rowSupplier = row.dataset.supplier;
-      if (rowSupplier !== supplierFilter) showRow = false;
+}
+
+function renderPurchaseTable(orders) {
+    const tbody = document.getElementById('purchaseTableBody');
+    if (!tbody) return;
+
+    if (!orders || orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No purchase orders found.</td></tr>';
+        return;
     }
-    
-    row.style.display = showRow ? '' : 'none';
-  });
-  
-  updateOrderCount();
+
+    tbody.innerHTML = orders.map(order => `
+        <tr>
+            <td><span class="po-number">${order.po_number}</span></td>
+            <td>${order.supplier_name}</td>
+            <td>${order.order_date}</td>
+            <td>${order.delivery_date}</td>
+            <td>${order.item_count || 0} items</td>
+            <td><strong>₱${parseFloat(order.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></td>
+            <td><button class="action-btn" onclick="viewOrderDetails(${order.po_id})">View</button></td>
+        </tr>
+    `).join('');
 }
 
-// Filter orders by search
-function filterOrders() {
-  const searchValue = document.getElementById('searchOrderInput').value.toLowerCase();
-  const rows = document.querySelectorAll('#purchaseTableBody tr');
-  
-  rows.forEach(row => {
-    const poNumber = row.cells[0].textContent.toLowerCase();
-    const supplier = row.cells[1].textContent.toLowerCase();
-    
-    if (poNumber.includes(searchValue) || supplier.includes(searchValue)) {
-      row.style.display = '';
-    } else {
-      row.style.display = 'none';
+// 2. Modal Logic
+async function openAddOrderModal() {
+    try {
+        const [invRes, supRes] = await Promise.all([
+            fetch('../api/get_inventory.php'),
+            fetch('../api/get_suppliers.php')
+        ]);
+
+        window.inventoryData = await invRes.json();
+        const suppliers = await supRes.json();
+
+        const supplierSelect = document.getElementById('poSupplier');
+        if (supplierSelect) {
+            supplierSelect.innerHTML = '<option value="">Select a supplier</option>' + 
+                suppliers.map(sup => `<option value="${sup.supplier_id}">${sup.supplier_name}</option>`).join('');
+        }
+
+        const modal = document.getElementById('createOrderModal');
+        if (modal) {
+            modal.style.display = 'block';
+            // Set order date to today's local date string
+            document.getElementById('poOrderDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('poItemsBody').innerHTML = ''; 
+            document.getElementById('poGrandTotal').textContent = '₱0.00';
+            addItemRow(); 
+        }
+    } catch (err) {
+        alert("Failed to initialize modal. Check supplier data.");
     }
-  });
-  
-  updateOrderCount();
 }
 
-// Sort table
-function sortOrderTable(column) {
-  const tbody = document.getElementById('purchaseTableBody');
-  const rows = Array.from(tbody.querySelectorAll('tr'));
-  
-  const columnMap = { po: 0, supplier: 1, date: 2, delivery: 3, items: 4, total: 5 };
-  const columnIndex = columnMap[column];
-  
-  rows.sort((a, b) => {
-    let aValue = a.cells[columnIndex].textContent.trim();
-    let bValue = b.cells[columnIndex].textContent.trim();
+function closeOrderModal() {
+    document.getElementById('createOrderModal').style.display = 'none';
+    document.getElementById('purchaseOrderForm').reset();
+}
+
+function addItemRow() {
+    const tbody = document.getElementById('poItemsBody');
+    const rowId = Date.now();
     
-    if (column === 'total') {
-      aValue = parseFloat(aValue.replace(/[₱,]/g, ''));
-      bValue = parseFloat(bValue.replace(/[₱,]/g, ''));
-    } else if (column === 'items') {
-      aValue = parseInt(aValue);
-      bValue = parseInt(aValue);
+    const productOptions = window.inventoryData.map(item => `
+        <option value="${item.inventory_id}" data-price="${item.price}">
+            ${item.product_name} (${item.sku})
+        </option>
+    `).join('');
+
+    const tr = document.createElement('tr');
+    tr.id = `row-${rowId}`;
+    tr.innerHTML = `
+        <td><select class="item-select" required onchange="autoFillPrice(${rowId})">
+            <option value="">-- Select Product --</option>${productOptions}</select></td>
+        <td><input type="number" class="qty-input" value="1" min="1" oninput="calculateTotals()"></td>
+        <td><input type="number" class="cost-input" value="0" step="0.01" oninput="calculateTotals()"></td>
+        <td class="row-subtotal">₱0.00</td>
+        <td><button type="button" class="action-btn delete" onclick="removeRow(${rowId})">&times;</button></td>
+    `;
+    tbody.appendChild(tr);
+}
+
+function autoFillPrice(rowId) {
+    const row = document.getElementById(`row-${rowId}`);
+    const select = row.querySelector('.item-select');
+    const price = select.options[select.selectedIndex].getAttribute('data-price');
+    if (price) row.querySelector('.cost-input').value = price;
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let grandTotal = 0;
+    document.querySelectorAll('#poItemsBody tr').forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+        const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
+        const subtotal = qty * cost;
+        row.querySelector('.row-subtotal').textContent = `₱${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        grandTotal += subtotal;
+    });
+    document.getElementById('poGrandTotal').textContent = `₱${grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+}
+
+// 3. Database Save
+async function handleCreateOrder(event) {
+    event.preventDefault();
+
+    const payload = {
+        supplier_id: document.getElementById('poSupplier').value,
+        order_date: document.getElementById('poOrderDate').value,
+        delivery_date: document.getElementById('poDeliveryDate').value,
+        total_amount: document.getElementById('poGrandTotal').textContent.replace(/[₱,]/g, ''),
+        status: 'pending',
+        items: []
+    };
+
+    const rows = document.querySelectorAll('#poItemsBody tr');
+    rows.forEach(row => {
+        payload.items.push({
+            inventory_id: row.querySelector('.item-select').value,
+            quantity: row.querySelector('.qty-input').value,
+            unit_cost: row.querySelector('.cost-input').value
+        });
+    });
+
+    try {
+        const res = await fetch('../api/create_purchase_order.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+            alert("Order Saved!");
+            closeOrderModal();
+            loadPurchaseOrders();
+        } else {
+            alert("Error: " + result.message);
+        }
+    } catch (err) {
+        alert("Submission failed.");
     }
-    
-    return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-  });
-  
-  rows.forEach(row => tbody.appendChild(row));
-}
-
-// Update count
-function updateOrderCount() {
-  const visibleRows = Array.from(document.querySelectorAll('#purchaseTableBody tr')).filter(
-    row => row.style.display !== 'none'
-  );
-  
-  const startCount = visibleRows.length > 0 ? 1 : 0;
-  const endCount = visibleRows.length;
-  
-  const showingStart = document.getElementById('orderShowingStart');
-  const showingEnd = document.getElementById('orderShowingEnd');
-  const totalOrders = document.getElementById('totalOrders');
-  
-  if (showingStart) showingStart.textContent = startCount;
-  if (showingEnd) showingEnd.textContent = endCount;
-  if (totalOrders) totalOrders.textContent = endCount;
-}
-
-// View order details
-function viewOrder(button) {
-  const row = button.closest('tr');
-  const poNumber = row.cells[0].querySelector('.po-number').textContent.trim();
-  const supplier = row.cells[1].textContent.trim();
-  const orderDate = row.cells[2].textContent.trim();
-  const delivery = row.cells[3].textContent.trim();
-  const items = row.cells[4].textContent.trim();
-  const total = row.cells[5].textContent.trim();
-  
-  alert(`Purchase Order Details:\n\nPO Number: ${poNumber}\nSupplier: ${supplier}\nOrder Date: ${orderDate}\nExpected Delivery: ${delivery}\nItems: ${items}\nTotal: ${total}`);
-}
-
-// Edit order
-function editOrder(button) {
-  const row = button.closest('tr');
-  const poNumber = row.cells[0].querySelector('.po-number').textContent.trim();
-  
-  alert(`Edit Purchase Order: ${poNumber}\n\nThis would open a form to edit:\n- Supplier\n- Items and quantities\n- Delivery date\n- Notes`);
-}
-
-// Delete/Cancel order
-function deleteOrder(button) {
-  const row = button.closest('tr');
-  const poNumber = row.cells[0].querySelector('.po-number').textContent.trim();
-  
-  if (confirm(`Cancel purchase order ${poNumber}?`)) {
-    row.remove();
-    updateOrderCount();
-    alert(`Purchase order ${poNumber} has been cancelled.`);
-  }
-}
-
-// Export orders
-function exportOrders() {
-  const rows = Array.from(document.querySelectorAll('#purchaseTableBody tr')).filter(
-    row => row.style.display !== 'none'
-  );
-  
-  let csv = 'PO Number,Supplier,Order Date,Expected Delivery,Items,Total Amount\n';
-  
-  rows.forEach(row => {
-    const cells = row.cells;
-    const po = cells[0].querySelector('.po-number').textContent.trim();
-    const supplier = cells[1].textContent.trim();
-    const orderDate = cells[2].textContent.trim();
-    const delivery = cells[3].textContent.trim();
-    const items = cells[4].textContent.trim();
-    const total = cells[5].textContent.trim();
-    
-    csv += `"${po}","${supplier}","${orderDate}","${delivery}","${items}","${total}"\n`;
-  });
-  
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'purchase_orders_export.csv';
-  a.click();
-  window.URL.revokeObjectURL(url);
-  
-  alert('Purchase orders exported successfully!');
-}
-
-// Open add order modal
-function openAddOrderModal() {
-  alert('Create Purchase Order\n\nThis would open a form with:\n- Select Supplier\n- Add Items (search and select)\n- Quantities for each item\n- Expected delivery date\n- Notes/Terms\n- Total calculation');
-}
-
-// Pagination
-function previousOrderPage() {
-  alert('Previous page');
-}
-
-function nextOrderPage() {
-  alert('Next page');
 }

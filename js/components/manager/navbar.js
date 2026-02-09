@@ -46,6 +46,8 @@ function changePage(pageId, event) {
   const placeholders = [
     'frame-placeholder',
     'condemnation-placeholder',
+    'purchase-placeholder',
+    'supplier-placeholder',
     'reports-placeholder'
   ];
   
@@ -77,7 +79,31 @@ function changePage(pageId, event) {
           }
         }, 100);
       } else {
-        console.error('❌ condemnation-placeholder not found!');
+        console.error('condemnation-placeholder not found!');
+      }
+      break;
+
+    // case 'condemnation':
+    //   const condemnationPlaceholder = document.getElementById('condemnation-placeholder');
+    //   if(condemnationPlaceholder) {
+    //     condemnationPlaceholder.style.display = 'block';
+    //     updateDropdownText('Condemnation');
+    //   }
+    //   break;
+
+    case 'purchase':
+      const purchasePlaceholder = document.getElementById('purchase-placeholder');
+      if (purchasePlaceholder) {
+        purchasePlaceholder.style.display = 'block';
+        updateDropdownText('Purchase');
+      }
+      break;
+
+    case 'supplier':
+      const supplierPlaceholder = document.getElementById('supplier-placeholder');
+      if (supplierPlaceholder) {
+        supplierPlaceholder.style.display = 'block';
+        updateDropdownText('Supplier');
       }
       break;
       
