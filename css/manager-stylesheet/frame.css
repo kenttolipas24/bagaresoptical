@@ -104,6 +104,11 @@
 }
 
 /* Tabs */
+.category-badge.accessories {
+    background: #f1f5f9; /* Light Gray */
+    color: #475569;      /* Slate Blue/Gray */
+}
+
 .inventory-tabs {
   display: flex;
   gap: 0.75rem;
