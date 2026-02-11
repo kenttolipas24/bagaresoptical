@@ -245,3 +245,63 @@ function attachFormHandler() {
     }
   });
 }
+
+// ===============================
+// Authentication Check Wrapper (FIXED PATH & ERROR HANDLING)
+// ===============================
+async function checkAuthAndLoadForm() {
+    try {
+        // FIX: Added '../' to go up one level to find the api folder
+        const response = await fetch('../api/check_session.php');
+        
+        // Check if the response is actually OK before parsing JSON
+        if (!response.ok) {
+            throw new Error(`Server responded with status ${response.status}`);
+        }
+
+        const session = await response.json();
+
+        if (!session.isLoggedIn) {
+            const placeholder = document.getElementById('booking-form-placeholder');
+            if (placeholder) {
+                placeholder.innerHTML = `
+                    <div class="auth-required-message">
+                        <h3>Authentication Required</h3>
+                        <p>You must be registered and logged in to book an appointment online.</p>
+                        <button onclick="openProfileModal()" class="btn-auth-primary">Login / Register Now</button>
+                    </div>`;
+            }
+            return;
+        }
+
+        // If logged in, proceed to load the form
+        loadBookingForm();
+    } catch (err) {
+        console.error('Session check error:', err);
+        // Fallback: Display a user-friendly message in the UI
+        const placeholder = document.getElementById('booking-form-placeholder');
+        if (placeholder) {
+            placeholder.innerHTML = `<p class="error-msg">Unable to verify session. Please refresh the page.</p>`;
+        }
+    }
+}
+
+function loadBookingForm() {
+    fetch('components/booking-form.html')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load booking form HTML');
+        return res.text();
+      })
+      .then(html => {
+        const placeholder = document.getElementById('booking-form-placeholder');
+        if (placeholder) {
+            placeholder.innerHTML = html;
+            setMinDate();
+            attachFormHandler();
+        }
+      })
+      .catch(err => console.error('Booking form load error:', err));
+}
+
+// Call the auth check on start
+checkAuthAndLoadForm();

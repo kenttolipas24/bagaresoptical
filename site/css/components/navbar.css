@@ -1,117 +1,204 @@
-/* Navbar Styles */
-header {
-    background: var(--color-white);
-    padding: var(--spacing-md) 0;
-    box-shadow: var(--shadow-sm);
+/* ==========================================================================
+   Bagares Optical Clinic - Minimalist Navbar & Profile Styles
+   ========================================================================== */
+
+:root {
+    --nav-height: 72px;
+    --primary-medical: #2563eb; /* Professional Blue */
+    --slate-900: #0f172a;      /* Dark Navy */
+    --slate-600: #475569;      /* Gray Slate */
+    --glass-bg: rgba(255, 255, 255, 0.85); /* Glassmorphism Base */
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 1. Header & Container */
+.site-header {
+    height: var(--nav-height);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px); /* Modern blur effect */
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
     position: sticky;
     top: 0;
     z-index: 1000;
+    transition: var(--transition);
 }
 
-.header-content {
-    max-width: var(--container-max-width);
+/* Scrolled state for professional transitions */
+.site-header.scrolled {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    height: 64px;
+}
+
+.header-container {
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 0 var(--container-padding);
+    padding: 0 2rem;
+    height: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-/* Logo */
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-primary);
-    cursor: pointer;
+/* 2. Brand Identity Redesign */
+.brand-identity { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.85rem; 
+    text-decoration: none; 
 }
 
-.logo-icon {
-    width: 40px;
-    height: 40px;
-    background: var(--color-primary);
-    border-radius: var(--radius-full);
+.brand-logo { 
+    width: 42px; 
+    height: 42px; 
+    border-radius: 10px; /* Modern squircle shape */
+    overflow: hidden; 
+    border: 1px solid #e2e8f0; 
+}
+
+.brand-logo img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+}
+
+.brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+
+.clinic-name { 
+    font-size: 1.1rem; 
+    font-weight: 800; 
+    color: var(--slate-900); 
+    letter-spacing: -0.01em; 
+}
+
+.clinic-suffix { 
+    font-size: 0.75rem; 
+    font-weight: 500; 
+    color: var(--slate-600); 
+    text-transform: uppercase; 
+    letter-spacing: 0.05em; 
+}
+
+/* 3. Refined Navigation Links */
+.nav-list { display: flex; gap: 2.5rem; list-style: none; }
+
+.nav-item { 
+    font-size: 0.9rem; 
+    font-weight: 600; 
+    color: var(--slate-600); 
+    text-decoration: none; 
+    transition: 0.2s ease; 
+    position: relative;
+    padding: 0.5rem 0;
+}
+
+.nav-item:hover, 
+.nav-item.active { 
+    color: var(--primary-medical); 
+}
+
+.nav-item.active::after {
+    content: ''; 
+    position: absolute; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 2px; 
+    background: var(--primary-medical); 
+    border-radius: 2px;
+}
+
+/* 4. FIXED Header Actions & Profile Trigger */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.profile-trigger {
+    background: transparent; /* Fixes the box look from the screenshot */
+    border: none;
+    padding: 0;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-white);
-    font-size: 1.2rem;
+    transition: transform 0.2s ease;
 }
 
-.logo-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: var(--radius-full);
-}
-
-/* Navigation */
-.navigation {
-    display: flex;
-    gap: var(--spacing-xl);
-    align-items: center;
-}
-
-.nav-link {
-    color: var(--color-text-secondary);
-    font-weight: var(--font-weight-medium);
-    font-size: var(--font-size-base);
-    transition: color var(--transition-normal);
-    position: relative;
-}
-
-.nav-link:hover {
-    color: var(--color-primary);
-}
-
-.nav-link.active {
-    color: var(--color-primary);
-    font-weight: var(--font-weight-semibold);
-}
-
-.nav-link.active::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: var(--color-primary);
-    border-radius: 2px;
-}
-
-.btn-book-header {
-    background: var(--color-primary);
-    color: var(--color-white);
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-sm);
-    font-weight: var(--font-weight-semibold);
-    transition: all var(--transition-normal);
-}
-
-.btn-book-header:hover {
-    background: var(--color-primary-hover);
+.profile-trigger:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
 }
 
-/* Mobile Menu Button */
-.mobile-menu-btn {
+.avatar-wrapper {
+    width: 40px; 
+    height: 40px;
+    background: var(--slate-900);
+    border-radius: 50%;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    color: white; 
+    transition: var(--transition);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.profile-trigger:hover .avatar-wrapper {
+    background: var(--primary-medical);
+    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+}
+
+.user-icon-svg { 
+    width: 18px; 
+    height: 18px; 
+}
+
+/* 5. Refined Appointment Status Badges */
+.status-badge { 
+    padding: 0.4rem 0.8rem; 
+    border-radius: 6px; 
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    letter-spacing: 0.02em; 
+}
+
+.status-pending { 
+    background: #fffbeb; 
+    color: #92400e; 
+    border: 1px solid #fef3c7; 
+}
+
+.status-confirmed { 
+    background: #f0fdf4; 
+    color: #166534; 
+    border: 1px solid #dcfce7; 
+}
+
+.status-rescheduled { 
+    background: #f0f9ff; 
+    color: #075985; 
+    border: 1px solid #e0f2fe; 
+}
+
+/* 6. Mobile Logic */
+.mobile-toggle {
     display: none;
     flex-direction: column;
-    gap: 4px;
-    background: none;
+    gap: 5px;
+    background: transparent;
     border: none;
     cursor: pointer;
-    padding: 8px;
 }
 
-.mobile-menu-btn span {
-    width: 25px;
-    height: 3px;
-    background: var(--color-primary);
+.mobile-toggle span {
+    width: 24px;
+    height: 2px;
+    background: var(--slate-900);
     border-radius: 2px;
-    transition: all var(--transition-normal);
+}
+
+@media (max-width: 992px) {
+    .main-nav { display: none; }
+    .mobile-toggle { display: flex; }
 }

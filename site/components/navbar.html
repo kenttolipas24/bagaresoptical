@@ -1,23 +1,36 @@
-<header>
-    <div class="header-content">
-        <div class="logo">
-            <div class="logo-icon">👓</div>
-            <span>Bagares Optical Clinic</span>
-        </div>
+<header class="site-header">
+    <div class="header-container">
+        <a href="#home" class="brand-identity">
+            <div class="brand-logo">
+                <img src="../assets/picture/logo.jpg" alt="Bagares Logo">
+            </div>
+            <div class="brand-text">
+                <span class="clinic-name">Bagares</span>
+                <span class="clinic-suffix">Optical Clinic</span>
+            </div>
+        </a>
 
-        <nav class="navigation">
-            <a href="#home" class="nav-link">Home</a>
-            <a href="#services" class="nav-link">Services</a>
-            <a href="#doctors" class="nav-link">Doctors</a>
-            <a href="#why-choose-us" class="nav-link">About Us</a>
-            <a href="#booking" class="btn-book-header">Book Appointment</a>
+        <nav class="main-nav">
+            <ul class="nav-list">
+                <li><a href="#home" class="nav-item">Home</a></li>
+                <li><a href="#services" class="nav-item">Services</a></li>
+                <li><a href="#doctors" class="nav-item">Doctors</a></li>
+                <li><a href="#why-choose-us" class="nav-item">About Us</a></li>
+            </ul>
         </nav>
 
-        <!-- Mobile toggle button - NO onclick anymore -->
-        <button class="mobile-menu-btn" aria-label="Toggle menu">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
+        <div class="header-actions">
+            <button class="profile-trigger" onclick="openProfileModal()">
+                <div class="avatar-wrapper">
+                    <svg class="user-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="7" r="4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </button>
+            <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
     </div>
 </header>

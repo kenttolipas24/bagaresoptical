@@ -1,0 +1,135 @@
+/* Container & Overlay */
+.profile-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+}
+
+.profile-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(10px); /* Modern blur effect */
+}
+
+/* Modal Box */
+.modal-content {
+    background: #ffffff;
+    width: 90%;
+    max-width: 420px;
+    padding: 2.5rem;
+    border-radius: 24px; /* Soft rounded corners */
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: #f1f5f9;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Auth Header Styles */
+.auth-header { text-align: center; margin-bottom: 2rem; }
+.auth-logo { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.auth-header h2 { font-size: 1.5rem; color: #0f172a; margin-bottom: 0.25rem; }
+.auth-header p { font-size: 0.9rem; color: #64748b; }
+
+/* Form Elements */
+.input-group { margin-bottom: 1.25rem; }
+.input-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 0.4rem; }
+.input-group input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    transition: 0.2s;
+}
+
+.input-group input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+.btn-auth-primary {
+    width: 100%;
+    background: #0f172a; /* Dark navy matching your profile button */
+    color: white;
+    padding: 1rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-auth-primary:hover { background: #1e293b; transform: translateY(-1px); }
+
+/* Dashboard Styling */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 1.5rem;
+}
+
+.welcome-text { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+.dashboard-header h3 { font-size: 1.25rem; color: #0f172a; }
+
+.apt-card {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.apt-title { display: block; font-weight: 600; color: #1e293b; margin-bottom: 0.2rem; }
+.apt-time { font-size: 0.8rem; color: #64748b; }
+
+/* Status Badges */
+.status-badge {
+    padding: 0.4rem 0.75rem;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.status-pending { background: #fef3c7; color: #92400e; }
+.status-confirmed { background: #dcfce7; color: #166534; }
+.status-rescheduled { background: #e0f2fe; color: #075985; }
+
+/* Footers & Links */
+.auth-footer { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #64748b; }
+.btn-link { background: none; border: none; color: #3b82f6; font-weight: 600; cursor: pointer; }
+
+.btn-logout { background: none; border: 1px solid #e2e8f0; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+
+.hidden { display: none; }

@@ -1,0 +1,78 @@
+<div class="profile-modal" id="profileModal">
+    <div class="modal-overlay" onclick="closeProfileModal()"></div>
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeProfileModal()" aria-label="Close modal">×</button>
+
+        <div id="view-login" class="auth-view">
+            <div class="auth-header">
+                <div class="auth-logo">👓</div>
+                <h2>Patient Login</h2>
+                <p>Welcome back! Please enter your details.</p>
+            </div>
+            <form class="auth-form" onsubmit="handlePatientAuth(event, 'login')">
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="login-email" placeholder="patient@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="login-pass" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-auth-primary">Login to Account</button>
+            </form>
+            <div class="auth-footer">
+                <span>New here?</span>
+                <button class="btn-link" onclick="switchProfileView('register')">Create an account</button>
+            </div>
+        </div>
+
+        <div id="view-register" class="auth-view hidden">
+            <div class="auth-header">
+                <h2>Create Account</h2>
+                <p>Register to track your appointment status.</p>
+            </div>
+            <form class="auth-form" onsubmit="handlePatientAuth(event, 'register')">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="reg-name" placeholder="Juan Dela Cruz" required>
+                </div>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="reg-email" placeholder="email@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="reg-pass" placeholder="Min. 8 characters" required>
+                </div>
+                <button type="submit" class="btn-auth-primary">Sign Up</button>
+            </form>
+            <div class="auth-footer">
+                <span>Already have an account?</span>
+                <button class="btn-link" onclick="switchProfileView('login')">Log in</button>
+            </div>
+        </div>
+
+        <div id="view-account" class="auth-view hidden">
+            <div class="dashboard-header">
+                <div>
+                    <span class="welcome-text">Account Dashboard</span>
+                    <h3 id="display-patient-name">Patient Name</h3>
+                </div>
+                <button class="btn-logout" onclick="handlePatientLogout()">Logout</button>
+            </div>
+
+            <div class="appointment-section">
+                <h4>My Appointments</h4>
+                <div class="appointment-feedback-list" id="appointmentList">
+                    <div class="apt-card">
+                        <div class="apt-details">
+                            <span class="apt-title">Eye Examination</span>
+                            <span class="apt-time">Feb 20, 2026</span>
+                        </div>
+                        <span class="status-badge status-pending">Pending</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
