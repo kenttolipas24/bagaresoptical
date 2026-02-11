@@ -1,5 +1,9 @@
+/**
+ * js/pages/booking.js - Bagares Optical Clinic
+ */
+
 // ===============================
-// Load Booking Form HTML
+// Load Booking Form HTML (IMPORTANT: DO NOT REMOVE)
 // ===============================
 fetch('components/booking-form.html')
   .then(res => {
@@ -34,36 +38,64 @@ function setMinDate() {
 }
 
 // ===============================
-// Step Navigation
+// Step Navigation (FIXED SCROLL)
 // ===============================
 let currentStep = 1;
+const bookingData = {}; // Global object to store data across steps
 
 window.nextStep = function(stepNumber) {
   if (!validateStep(currentStep)) {
     return;
   }
 
+  // Store data only when moving forward
+  if (currentStep === 1 && stepNumber === 2) {
+    bookingData.service = document.querySelector('input[name="service"]:checked')?.value;
+    bookingData.date    = document.getElementById('date')?.value;
+    bookingData.time    = document.getElementById('time')?.value;
+  }
+
+  if (currentStep === 2 && stepNumber === 3) {
+    bookingData.firstname  = document.getElementById('firstname')?.value.trim();
+    bookingData.middlename = document.getElementById('middlename')?.value.trim() || '';
+    bookingData.lastname   = document.getElementById('lastname')?.value.trim();
+    bookingData.suffix     = document.getElementById('suffix')?.value.trim() || '';
+    bookingData.address    = document.getElementById('address')?.value.trim();
+    bookingData.birthdate  = document.getElementById('birthdate')?.value;
+    bookingData.email      = document.getElementById('email')?.value.trim();
+    bookingData.phone      = document.getElementById('phone')?.value.trim() || null;
+
+    populateConfirmation();
+  }
+
   document.getElementById(`step-${currentStep}`).classList.add('hidden');
   document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
   
-  if (stepNumber === 3) {
-    populateConfirmation();
-  }
-  
   currentStep = stepNumber;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // FIXED: Scroll to the booking section instead of the top of the website
+  const bookingSection = document.getElementById('booking');
+  if (bookingSection) {
+    bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 };
 
 window.prevStep = function() {
   document.getElementById(`step-${currentStep}`).classList.add('hidden');
   const prevStepNum = currentStep - 1;
   document.getElementById(`step-${prevStepNum}`).classList.remove('hidden');
+  
   currentStep = prevStepNum;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // FIXED: Scroll to the booking section container
+  const bookingSection = document.getElementById('booking');
+  if (bookingSection) {
+    bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 };
 
 // ===============================
-// Validate Current Step (Phone is now OPTIONAL)
+// Validate Current Step
 // ===============================
 function validateStep(step) {
   if (step === 1) {
@@ -84,75 +116,29 @@ function validateStep(step) {
     const address   = document.getElementById('address')?.value.trim();
     const birthdate = document.getElementById('birthdate')?.value;
     const email     = document.getElementById('email')?.value.trim();
-    const phone     = document.getElementById('phone')?.value.trim(); // optional
+    const phone     = document.getElementById('phone')?.value.trim();
 
-    // Required fields (phone removed from required check)
     if (!firstname || !lastname || !address || !birthdate || !email) {
       alert('Please fill in all required fields (phone is optional)');
       return false;
     }
     
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       alert('Please enter a valid email address');
       return false;
     }
     
-    // Phone validation ONLY if filled (optional)
     if (phone !== '') {
       const phoneRegex = /^09\d{9}$/;
-      const cleanPhone = phone.replace(/\s/g, '');
-      if (!phoneRegex.test(cleanPhone)) {
-        alert('Phone number (if provided) must start with 09 and be 11 digits (e.g., 09123456789)');
+      if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+        alert('Phone number must start with 09 and be 11 digits');
         return false;
       }
     }
-    
     return true;
   }
-  
   return true;
-}
-
-// ===============================
-// Next Step (updated to store optional phone)
-// ===============================
-function nextStep(step) {
-  // Run validation BEFORE proceeding
-  if (!validateStep(currentStep)) {
-    return;
-  }
-
-  // Store data only when moving forward
-  if (currentStep === 1 && step === 2) {
-    bookingData.service = document.querySelector('input[name="service"]:checked')?.value;
-    bookingData.date    = document.getElementById('date')?.value;
-    bookingData.time    = document.getElementById('time')?.value;
-  }
-
-  if (currentStep === 2 && step === 3) {
-    bookingData.firstname  = document.getElementById('firstname')?.value.trim();
-    bookingData.middlename = document.getElementById('middlename')?.value.trim() || '';
-    bookingData.lastname   = document.getElementById('lastname')?.value.trim();
-    bookingData.suffix     = document.getElementById('suffix')?.value.trim() || '';
-    bookingData.address    = document.getElementById('address')?.value.trim();
-    bookingData.birthdate  = document.getElementById('birthdate')?.value;
-    bookingData.email      = document.getElementById('email')?.value.trim();
-    bookingData.phone      = document.getElementById('phone')?.value.trim() || null; // optional
-
-    bookingData.fullname = `${bookingData.firstname} ${bookingData.middlename} ${bookingData.lastname}`;
-    if (bookingData.suffix) bookingData.fullname += ` ${bookingData.suffix}`;
-
-    generateConfirmation();
-  }
-
-  // Hide current, show next
-  document.getElementById(`step-${currentStep}`)?.classList.add('hidden');
-  document.getElementById(`step-${step}`)?.classList.remove('hidden');
-  
-  currentStep = step;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ===============================
@@ -162,17 +148,9 @@ function populateConfirmation() {
   const service = document.querySelector('input[name="service"]:checked').value;
   const date = document.getElementById('date').value;
   const time = document.getElementById('time').value;
-  const firstname = document.getElementById('firstname').value;
-  const middlename = document.getElementById('middlename').value;
-  const lastname = document.getElementById('lastname').value;
-  const suffix = document.getElementById('suffix').value;
-  const address = document.getElementById('address').value;
-  const birthdate = document.getElementById('birthdate').value;
-  const phone = document.getElementById('phone').value;
-  const email = document.getElementById('email').value;
   
-  let fullName = `${firstname} ${middlename} ${lastname}`;
-  if (suffix) fullName += ` ${suffix}`;
+  let fullName = `${bookingData.firstname} ${bookingData.middlename} ${bookingData.lastname}`;
+  if (bookingData.suffix) fullName += ` ${bookingData.suffix}`;
   
   const dateObj = new Date(date + 'T00:00:00');
   const formattedDate = dateObj.toLocaleDateString('en-US', { 
@@ -207,7 +185,7 @@ function populateConfirmation() {
     <div class="summary-item">
       <div class="summary-content">
         <div class="summary-label">Contact</div>
-        <div class="summary-value">${phone} • ${email}</div>
+        <div class="summary-value">${bookingData.phone || 'N/A'} • ${bookingData.email}</div>
       </div>
     </div>
   `;
@@ -218,27 +196,10 @@ function populateConfirmation() {
 // ===============================
 function attachFormHandler() {
   const form = document.getElementById('booking-form');
-  if (!form) {
-    console.error('Booking form not found');
-    return;
-  }
+  if (!form) return;
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-
-    const bookingData = {
-      service: document.querySelector('input[name="service"]:checked').value,
-      date: document.getElementById('date').value,
-      time: document.getElementById('time').value,
-      firstname: document.getElementById('firstname').value.trim(),
-      middlename: document.getElementById('middlename').value.trim() || null,
-      lastname: document.getElementById('lastname').value.trim(),
-      suffix: document.getElementById('suffix').value.trim() || null,
-      address: document.getElementById('address').value.trim(),
-      birthdate: document.getElementById('birthdate').value,
-      phone: document.getElementById('phone').value.trim(),
-      email: document.getElementById('email').value.trim()
-    };
 
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
@@ -254,12 +215,10 @@ function attachFormHandler() {
 
       const text = await res.text();
       let data;
-      
       try {
         data = JSON.parse(text);
       } catch {
-        console.error('Server returned non-JSON:', text);
-        throw new Error('Server error: invalid response');
+        throw new Error('Server returned an invalid response');
       }
 
       if (!res.ok || !data.success) {
@@ -271,7 +230,11 @@ function attachFormHandler() {
       document.getElementById('step-3').classList.add('hidden');
       document.getElementById('step-1').classList.remove('hidden');
       currentStep = 1;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      const bookingSection = document.getElementById('booking');
+      if (bookingSection) {
+        bookingSection.scrollIntoView({ behavior: 'smooth' });
+      }
 
     } catch (err) {
       console.error('Booking error:', err);
